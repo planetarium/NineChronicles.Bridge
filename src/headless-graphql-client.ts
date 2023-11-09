@@ -54,7 +54,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
             const values = (action.get("values") as Dictionary).get("l");
             const recipientAvatarAddress = Address.fromBytes(values[0]);
             const fungibleAssetValues: [Address, FungibleAssetValue][] =
-                (values[1] as []).map(args => [
+                (values[1] ?? []).map(args => [
                     Address.fromBytes(args[0]),
                     {
                         currency: decodeCurrency(args[1][0]),
@@ -62,7 +62,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     }
                 ]);
             const fungibleItems: [Address, string, number][] =
-                (values[2] as []).map(args => [
+                (values[2] ?? []).map(args => [
                     recipientAvatarAddress,
                     Buffer.from(args[0]).toString("hex"),
                     args[1]]);
