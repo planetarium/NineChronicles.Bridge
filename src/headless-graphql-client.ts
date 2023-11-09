@@ -5,7 +5,6 @@ import { GarageUnloadEvent } from "./types/garage-unload-event";
 import { BencodexDictionary, Dictionary, Value, decode, encode } from "@planetarium/bencodex";
 import { Address } from "@planetarium/account";
 import { Currency, FungibleAssetValue } from "@planetarium/tx";
-import { AssetBurntEvent } from "./types/asset-burnt-event";
 import { AssetTransferredEvent } from "./types/asset-transferred-event";
 
 function delay(ms: number): Promise<void> {
@@ -29,43 +28,6 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     constructor(apiEndpoint: string, maxRetry: number) {
         this._apiEndpoint = apiEndpoint;
         this._maxRetry = maxRetry;
-    }
-
-    async getAssetBurntEvents(blockIndex: number): Promise<AssetBurntEvent[]> {
-        const query = `query GetAssetBurnt($startingBlockIndex: Long!){
-            transaction {
-                ncTransactions(startingBlockIndex: $startingBlockIndex, actionType: "burn_asset*", limit: 1){
-                    id
-                    actions {
-                        raw
-                    }
-                }
-            }
-        }`;
-        const { data } = await this.graphqlRequest({
-            query,
-            operationName: "GetAssetBurnt",
-            variables: {
-                startingBlockIndex: blockIndex,
-            }
-        });
-
-        return data.data.transaction.ncTransactions.map(tx => {
-            const action = decode(Buffer.from(tx.actions[0].raw, "hex")) as Dictionary;
-            const [_, amount, memo] = (action.get("values") as [Value, BencodexDictionary, string]);
-
-            if (memo.length !== 40) {
-                return null;
-            }
-
-            return {
-                amount: {
-                    currency: decodeCurrency(amount[0]),
-                    rawValue: amount[1]
-                },
-                memo,
-            };
-        }).filter(ev => ev !== null);
     }
 
     async getGarageUnloadEvents(blockIndex: number, agentAddress: Address, avatarAddress: Address): Promise<GarageUnloadEvent[]> {
