@@ -4,8 +4,6 @@ import { Address, RawPrivateKey } from "@planetarium/account";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 import { Minter } from "./minter";
 import { GarageObserver } from "./observers/garage-observer";
-import { AssetBurntObserver } from "./observers/asset-burnt-observer";
-import { AssetTransfer } from "./asset-transfer";
 import { AssetTransferredObserver } from "./observers/asset-transferred-observer";
 
 
@@ -14,7 +12,7 @@ const heimdallClient = new HeadlessGraphQLClient("https://heimdall-internal-rpc-
 
 test(".getGarageUnloadEvents()", async () => {
     var x = await odinClient.getGarageUnloadEvents(
-        8261390,
+        8286963,
         Address.fromHex("0x9b9566db35d5eff2f0b0758c5ac4c354debaf118", true),
         Address.fromHex("0xeFE0bB583257C5C3c5650Bef70d135d4aD0E9b73", true),
     );
@@ -27,19 +25,6 @@ test(".getGarageUnloadEvents()", async () => {
     const observer = new GarageObserver(monitorStateStore, minter);
     await observer.notify({blockHash: "", events: x.map(ev => {return {...ev, blockHash: ""}})});
 
-    return;
-});
-
-test("getAssetsBurnEvents()", async () => {
-    var evs = await heimdallClient.getAssetBurntEvents(3662);
-    const account = RawPrivateKey.fromHex("");
-    const transfer = new AssetTransfer(
-        account,
-        odinClient
-    );
-    const observer = new AssetBurntObserver(transfer);
-    await observer.notify({blockHash: "", events: evs.map(ev => {return {...ev, blockHash: ""}})});
- 
     return;
 });
 
