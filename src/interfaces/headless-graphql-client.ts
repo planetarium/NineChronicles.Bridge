@@ -1,7 +1,6 @@
 import { Address } from "@planetarium/account";
 import { BlockHash } from "../types/block-hash";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
-import { AssetBurntEvent } from "../types/asset-burnt-event";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 
 export interface IHeadlessGraphQLClient {
@@ -15,7 +14,6 @@ export interface IHeadlessGraphQLClient {
         agentAddress: Address,
         avatarAddress: Address,
     ): Promise<GarageUnloadEvent[]>;
-    getAssetBurntEvents(blockIndex: number): Promise<AssetBurntEvent[]>;
     getAssetTransferredEvents(
         blockIndex: number,
         recipient: Address,

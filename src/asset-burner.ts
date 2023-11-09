@@ -1,12 +1,11 @@
 import { FungibleAssetValue, encodeSignedTx, signTx } from "@planetarium/tx";
-import { IAssetTransfer } from "./interfaces/asset-transfer";
 import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
-import { Account, Address } from "@planetarium/account";
+import { Account } from "@planetarium/account";
 import { RecordView, encode } from "@planetarium/bencodex";
 import { additionalGasTxProperties } from "./tx";
-import { encodeFungibleAssetValue } from "@planetarium/tx/dist/assets";
+import { IAssetBurner } from "./interfaces/asset-burner";
 
-export class AssetTransfer implements IAssetTransfer {
+export class AssetBurner implements IAssetBurner {
     private readonly _client:  IHeadlessGraphQLClient;
     private readonly _account: Account;
 
@@ -15,17 +14,26 @@ export class AssetTransfer implements IAssetTransfer {
         this._client = client;
     }
 
-    async transfer(recipient: Address, amount: FungibleAssetValue, memo: string): Promise<string> {
+    async burn(amount: FungibleAssetValue, memo: string): Promise<string> {
         const sender = (await this._account.getAddress()).toBytes();
         const action = new RecordView(
             {
-                type_id: "transfer_asset5",
-                values: {
-                    amount: encodeFungibleAssetValue(amount),
-                    ...(memo === null ? {} : { memo }),
-                    recipient: Buffer.from(recipient.toBytes()),
-                    sender: Buffer.from(sender),
-                },
+                type_id: "burn_asset",
+                values: [
+                    sender,
+                    [
+                        new RecordView(
+                            {
+                                decimalPlaces: Buffer.from([0x02]),
+                                minters: [Buffer.from("47d082a115c63e7b58b1532d20e631538eafadde", "hex")],
+                                ticker: "NCG",
+                            },
+                            "text"
+                        ),
+                        BigInt(amount.rawValue),
+                    ],
+                    memo
+                ],
             },
             "text"
         );
