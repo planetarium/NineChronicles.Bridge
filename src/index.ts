@@ -8,6 +8,9 @@ import { Minter } from './minter';
 import { Address, RawPrivateKey } from '@planetarium/account';
 import { GarageUnloadMonitor } from './monitors/garage-unload-monitor';
 import { GarageObserver } from './observers/garage-observer';
+import { AssetDownstreamObserver } from './observers/asset-downstream-observer';
+import { AssetTransfer } from './asset-transfer';
+import { AssetBurner } from './asset-burner';
 
 (async() => {
     const upstreamGQLClient = new HeadlessGraphQLClient(
@@ -22,9 +25,14 @@ import { GarageObserver } from './observers/garage-observer';
         process.env.MONITOR_STATE_STORE_PATH
     );
     
-    const assetsTransferredMonitorMonitor = new AssetsTransferredMonitor(
+    const upstreamAssetsTransferredMonitorMonitor = new AssetsTransferredMonitor(
         await monitorStateStore.load("nineChronicles"),
         upstreamGQLClient,
+        Address.fromHex(process.env.NC_VAULT_ADDRESS)
+    );
+    const downstreamAssetsTransferredMonitorMonitor = new AssetsTransferredMonitor(
+        await monitorStateStore.load("nineChronicles"),
+        downstreamGQLClient,
         Address.fromHex(process.env.NC_VAULT_ADDRESS)
     );
     const garageMonitor = new GarageUnloadMonitor(
@@ -45,17 +53,27 @@ import { GarageObserver } from './observers/garage-observer';
         downstreamAccount,
         downstreamGQLClient
     );
+
+    const upstreamTransfer = new AssetTransfer(upstreamAccount, upstreamGQLClient);
+    const downstreamBurner = new AssetBurner(downstreamAccount, downstreamGQLClient);
     
-    assetsTransferredMonitorMonitor.attach(
+    upstreamAssetsTransferredMonitorMonitor.attach(
         new AssetTransferredObserver(
             monitorStateStore, 
             minter
         )
     );
 
+    downstreamAssetsTransferredMonitorMonitor.attach(
+        new AssetDownstreamObserver(
+            upstreamTransfer,
+            downstreamBurner,
+        ),
+    );
+
     garageMonitor.attach(new GarageObserver(monitorStateStore, minter));
 
-    assetsTransferredMonitorMonitor.run();
+    upstreamAssetsTransferredMonitorMonitor.run();
     garageMonitor.run();
 })().catch(error => {
     console.error(error);
