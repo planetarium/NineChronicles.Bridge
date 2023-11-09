@@ -1,10 +1,9 @@
-import { FungibleAssetValue, encodeSignedTx, signTx } from "@planetarium/tx";
+import { FungibleAssetValue, encodeCurrency, encodeSignedTx, signTx } from "@planetarium/tx";
 import { IAssetTransfer } from "./interfaces/asset-transfer";
 import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
 import { Account, Address } from "@planetarium/account";
 import { RecordView, encode } from "@planetarium/bencodex";
 import { additionalGasTxProperties } from "./tx";
-import { encodeFungibleAssetValue } from "@planetarium/tx/dist/assets";
 
 export class AssetTransfer implements IAssetTransfer {
     private readonly _client:  IHeadlessGraphQLClient;
@@ -21,7 +20,8 @@ export class AssetTransfer implements IAssetTransfer {
             {
                 type_id: "transfer_asset5",
                 values: {
-                    amount: encodeFungibleAssetValue(amount),
+                    // `encodeFungibleAssetValue()` wasn't exported properly.
+                    amount: [encodeCurrency(amount.currency), amount.rawValue],
                     ...(memo === null ? {} : { memo }),
                     recipient: Buffer.from(recipient.toBytes()),
                     sender: Buffer.from(sender),
