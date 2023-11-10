@@ -203,7 +203,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
             variables: { payload },
         });
 
-        return response.data.data.stageTx;
+        return response.data.data.stageTransaction;
     }
 
     private async graphqlRequest(
