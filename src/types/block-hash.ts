@@ -1,1 +1,1 @@
-export type BlockHash = string;
+export type BlockHash = string

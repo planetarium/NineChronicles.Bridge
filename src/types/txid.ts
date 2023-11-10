@@ -1,1 +1,1 @@
-export type TxId = string;
+export type TxId = string

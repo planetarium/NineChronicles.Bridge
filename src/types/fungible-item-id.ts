@@ -1,1 +1,1 @@
-export type FungibleItemId = string;
+export type FungibleItemId = string
