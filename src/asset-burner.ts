@@ -1,4 +1,4 @@
-import { FungibleAssetValue, encodeSignedTx, signTx } from "@planetarium/tx";
+import { FungibleAssetValue, encodeCurrency, encodeSignedTx, signTx } from "@planetarium/tx";
 import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
 import { Account } from "@planetarium/account";
 import { RecordView, encode } from "@planetarium/bencodex";
@@ -22,15 +22,8 @@ export class AssetBurner implements IAssetBurner {
                 values: [
                     sender,
                     [
-                        new RecordView(
-                            {
-                                decimalPlaces: Buffer.from([0x02]),
-                                minters: [Buffer.from("47d082a115c63e7b58b1532d20e631538eafadde", "hex")],
-                                ticker: "NCG",
-                            },
-                            "text"
-                        ),
-                        BigInt(amount.rawValue),
+                        encodeCurrency(amount.currency),
+                        amount.rawValue,
                     ],
                     memo
                 ],

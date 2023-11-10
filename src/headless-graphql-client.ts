@@ -145,6 +145,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
             });
 
             return data.data.transaction.ncTransactions.map(tx => {
+                const txId = tx.id;
                 const action = decode(Buffer.from(tx.actions[0].raw, "hex")) as Dictionary;
                 const values = (action.get("values") as BencodexDictionary);
                 const sender = Address.fromBytes(values.get("sender") as Buffer);
@@ -161,6 +162,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                 }
 
                 return {
+                    txId,
                     sender,
                     recipient,
                     amount,
@@ -201,7 +203,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
             variables: { payload },
         });
 
-        return response.data.data.stageTx;
+        return response.data.data.stageTransaction;
     }
 
     private async graphqlRequest(
