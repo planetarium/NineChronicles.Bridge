@@ -74,6 +74,7 @@ import { AssetBurner } from './asset-burner';
     garageMonitor.attach(new GarageObserver(monitorStateStore, minter));
 
     upstreamAssetsTransferredMonitorMonitor.run();
+    downstreamAssetsTransferredMonitorMonitor.run();
     garageMonitor.run();
 })().catch(error => {
     console.error(error);
