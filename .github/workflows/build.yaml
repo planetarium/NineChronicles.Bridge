@@ -1,4 +1,4 @@
-name: Build
+name: Build & Lint
 
 on:
   push:
@@ -22,3 +22,6 @@ jobs:
 
       - name: Build
         run: yarn compile
+
+      - name: Lint
+        run: yarn ts-standard
