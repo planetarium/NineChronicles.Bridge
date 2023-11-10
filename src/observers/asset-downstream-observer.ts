@@ -22,7 +22,7 @@ export class AssetDownstreamObserver implements IObserver<{
         const { events } = data;
 
         for (const ev of events) {
-            if (ev.amount.currency.ticker === "NCG") {
+            if (ev.amount.currency.ticker !== "NCG") {
                 continue;
             }
 
