@@ -11,6 +11,7 @@ import { GarageObserver } from './observers/garage-observer';
 import { AssetDownstreamObserver } from './observers/asset-downstream-observer';
 import { AssetTransfer } from './asset-transfer';
 import { AssetBurner } from './asset-burner';
+import { Signer } from './signer';
 
 (async() => {
     const upstreamGQLClient = new HeadlessGraphQLClient(
@@ -49,13 +50,13 @@ import { AssetBurner } from './asset-burner';
         process.env.NC_DOWNSTREAM_PRIVATE_KEY
     );
 
-    const minter = new Minter(
-        downstreamAccount,
-        downstreamGQLClient
-    );
+    const upstreamSigner = new Signer(upstreamAccount, upstreamGQLClient);
+    const downstreamSigner = new Signer(downstreamAccount, downstreamGQLClient);
 
-    const upstreamTransfer = new AssetTransfer(upstreamAccount, upstreamGQLClient);
-    const downstreamBurner = new AssetBurner(downstreamAccount, downstreamGQLClient);
+    const minter = new Minter(downstreamSigner);
+
+    const upstreamTransfer = new AssetTransfer(upstreamSigner);
+    const downstreamBurner = new AssetBurner(downstreamSigner);
     
     upstreamAssetsTransferredMonitorMonitor.attach(
         new AssetTransferredObserver(
