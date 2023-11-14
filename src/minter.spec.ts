@@ -4,13 +4,16 @@ import { RawPrivateKey } from "@planetarium/account";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
 import Decimal from "decimal.js";
 import { Currency } from "@planetarium/tx";
+import { Signer } from "./signer";
 
 test("mint fav", async () => {
     const account = RawPrivateKey.fromHex("");
-    const minter = new Minter(
+    const signer = new Signer(
         account,
         new HeadlessGraphQLClient("https://heimdall-internal-rpc-1.nine-chronicles.com/graphql", 1)
     );
+
+    const minter = new Minter(signer);
     const amount = new Decimal("0.01").mul(100).floor();
     const ncg: Currency = {
         decimalPlaces: 0x02,
@@ -30,10 +33,12 @@ test("mint fav", async () => {
 
 test("mint fis", async () => {
     const account = RawPrivateKey.fromHex("");
-    const minter = new Minter(
+    const signer = new Signer(
         account,
         new HeadlessGraphQLClient("https://heimdall-internal-rpc-1.nine-chronicles.com/graphql", 1)
     );
+
+    const minter = new Minter(signer);
 
     await minter.mintAssets([{
         recipient: "0x37fd092455B529cFAE3Bf3b58201cE029231cDBe", 

@@ -5,6 +5,7 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 import { Minter } from "./minter";
 import { GarageObserver } from "./observers/garage-observer";
 import { AssetTransferredObserver } from "./observers/asset-transferred-observer";
+import { Signer } from "./signer";
 
 
 const odinClient = new HeadlessGraphQLClient("https://9c-internal-rpc-1.nine-chronicles.com/graphql", 1);
@@ -18,10 +19,11 @@ test(".getGarageUnloadEvents()", async () => {
     );
     const monitorStateStore = await Sqlite3MonitorStateStore.open("test");
     const account = RawPrivateKey.fromHex("");
-    const minter = new Minter(
+    const signer = new Signer(
         account,
-        heimdallClient
+        heimdallClient,
     );
+    const minter = new Minter(signer);
     const observer = new GarageObserver(monitorStateStore, minter);
     await observer.notify({blockHash: "", events: x.map(ev => {return {...ev, blockHash: ""}})});
 
@@ -32,10 +34,11 @@ test("getAssetTransferredEvents()", async() => {
     var evs = await odinClient.getAssetTransferredEvents(8277202, Address.fromHex("0x9b9566db35d5eff2f0b0758c5ac4c354debaf118", true));
     
     const account = RawPrivateKey.fromHex("");
-    const minter = new Minter(
+    const signer = new Signer(
         account,
         heimdallClient,
     );
+    const minter = new Minter(signer);
     const stateStore = await Sqlite3MonitorStateStore.open("test");
     const observer = new AssetTransferredObserver(stateStore, minter);
     await observer.notify({blockHash: "", events: evs.map(ev => {return {...ev, blockHash: ""}})});

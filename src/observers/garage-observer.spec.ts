@@ -4,14 +4,16 @@ import { Sqlite3MonitorStateStore } from "../sqlite3-monitor-state-store";
 import { RawPrivateKey } from "@planetarium/account";
 import { Minter } from "../minter";
 import { HeadlessGraphQLClient } from "../headless-graphql-client";
+import { Signer } from "../signer";
 
 test("notify", async () => {
     const monitorStateStore = await Sqlite3MonitorStateStore.open("test");
     const account = RawPrivateKey.fromHex("");
-    const minter = new Minter(
+    const signer = new Signer(
         account,
         new HeadlessGraphQLClient("https://heimdall-internal-rpc-1.nine-chronicles.com/graphql", 1)
     );
+    const minter = new Minter(signer);
     const observer = new GarageObserver(monitorStateStore, minter);
     observer.notify({
         blockHash: "xxx",
