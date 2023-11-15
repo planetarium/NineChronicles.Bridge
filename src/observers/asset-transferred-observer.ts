@@ -40,7 +40,7 @@ export class AssetTransferredObserver implements IObserver<{
                 rawValue: amount.rawValue,
             };
 
-            await this._minter.mintAssets([{ recipient, amount: amountToMint }]);
+            await this._minter.mintAssets([{ recipient, amount: amountToMint }], null);
         }
     }
 }
