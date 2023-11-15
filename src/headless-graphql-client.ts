@@ -128,7 +128,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
             const query = `query GetAssetTransferred($blockIndex: Long!)
             {             
                 transaction {
-                    ncTransactions(startingBlockIndex: $blockIndex, actionType: "transfer_asset*", limit: 1) {
+                    ncTransactions(startingBlockIndex: $blockIndex, actionType: "^transfer_asset[0-9]*$", limit: 1) {
                         id
                         actions {
                             raw
