@@ -12,11 +12,11 @@ export class Minter implements IMinter {
         this.signer = signer;
     }
     
-    async mintAssets(assets: [IFungibleAssetValues | IFungibleItems]): Promise<string> {
+    async mintAssets(assets: [IFungibleAssetValues | IFungibleItems], memo: string | null): Promise<string> {
         const action = new RecordView(            
             {
                 type_id: "mint_assets",
-                values: assets.map(encodeMintSpec),
+                values: [memo, ...assets.map(encodeMintSpec)],
             },
             "text"
         );

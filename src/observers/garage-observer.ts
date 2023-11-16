@@ -27,7 +27,7 @@ export class GarageObserver implements IObserver<{
                 txId,
             });
 
-            const { agentAddress, avatarAddress } = parseMemo(memo);
+            const { agentAddress, avatarAddress, memo: memoForMinter } = parseMemo(memo);
 
             const requests: (IFungibleAssetValues | IFungibleItems)[] = [];
             for (const fa of fungibleAssetValues) {
@@ -47,18 +47,18 @@ export class GarageObserver implements IObserver<{
 
             if (requests.length !== 0) {
                 // @ts-ignore
-                await this._minter.mintAssets(requests);
+                await this._minter.mintAssets(requests, memoForMinter);
             }
         }
-
     }
 }
-function parseMemo(memo: string): { agentAddress: string; avatarAddress: string; } {
+function parseMemo(memo: string): { agentAddress: string; avatarAddress: string; memo: string; } {
     const parsed = JSON.parse(memo);
 
     return {
         agentAddress: parsed[0],
         avatarAddress: parsed[1],
+        memo: parsed[2],
     };
 }
 

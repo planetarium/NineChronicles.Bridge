@@ -19,5 +19,5 @@ export interface IFungibleItems
 export interface IMinter {
     getMinterAddress(): Promise<Address>;
 
-    mintAssets(assets: [IFungibleAssetValues | IFungibleItems]): Promise<TxId>;
+    mintAssets(assets: [IFungibleAssetValues | IFungibleItems], memo: string | null): Promise<TxId>;
 }

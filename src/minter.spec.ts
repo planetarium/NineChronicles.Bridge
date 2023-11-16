@@ -28,7 +28,7 @@ test("mint fav", async () => {
             currency: ncg,
             rawValue: BigInt(amount.toNumber()),
         },
-    }]);
+    }], null);
 });
 
 test("mint fis", async () => {
@@ -44,5 +44,5 @@ test("mint fis", async () => {
         recipient: "0x37fd092455B529cFAE3Bf3b58201cE029231cDBe", 
         fungibleItemId: "1a755098a2bc0659a063107df62e2ff9b3cdaba34d96b79519f504b996f53820", 
         count: 100
-    }]);
+    }], null);
 });
