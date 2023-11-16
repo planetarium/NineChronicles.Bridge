@@ -31,7 +31,7 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
         const blockHash =
             await this._headlessGraphQLClient.getBlockHash(blockIndex);
         const events = await this._headlessGraphQLClient.getGarageUnloadEvents(
-            blockIndex,
+            blockIndex - 1, // need to wait 1 block far from tip due to 9c headless' bug.
             this._agentAddress,
             this._avatarAddress,
         );

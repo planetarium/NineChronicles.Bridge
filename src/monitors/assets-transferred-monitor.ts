@@ -29,7 +29,7 @@ export class AssetsTransferredMonitor extends NineChroniclesMonitor<AssetTransfe
             await this._headlessGraphQLClient.getBlockHash(blockIndex);
         const events =
             await this._headlessGraphQLClient.getAssetTransferredEvents(
-                blockIndex,
+                blockIndex - 1,  // need to wait 1 block far from tip due to 9c headless' bug.
                 this._address,
             );
 
