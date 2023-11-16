@@ -45,6 +45,7 @@ export class Signer {
             };
 
             const tx = await signTx(unsignedTx, this._account);
+            console.log(`Staging tx with nonce ${nonce}...`);
             return this._client.stageTransaction(
                 Buffer.from(encode(encodeSignedTx(tx))).toString("hex"),
             );

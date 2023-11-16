@@ -47,9 +47,11 @@ export class GarageObserver
                 avatarAddress,
                 memo: memoForMinter,
             } = parseMemo(memo);
+            console.log(`Memo parsed (agentAddress: ${agentAddress}, avatarAddress: ${avatarAddress}, memo: ${memoForMinter}`);
 
             const requests: (IFungibleAssetValues | IFungibleItems)[] = [];
             for (const fa of fungibleAssetValues) {
+                console.log(`fungible item detected. (address: ${fa[0]}`);
                 requests.push({
                     recipient: agentAddress,
                     amount: fa[1],
@@ -57,6 +59,7 @@ export class GarageObserver
             }
 
             for (const fi of fungibleItems) {
+                console.log(`fungible item detected. (address: ${fi[0]}, id: ${fi[1]}, count: ${fi[2]}`);
                 requests.push({
                     recipient: avatarAddress,
                     fungibleItemId: fi[1],
@@ -65,6 +68,7 @@ export class GarageObserver
             }
 
             if (requests.length !== 0) {
+                console.log(`Minting for ${requests.length} requests... (memo: ${memoForMinter})`);
                 // @ts-ignore
                 await this._minter.mintAssets(requests, memoForMinter);
             }
