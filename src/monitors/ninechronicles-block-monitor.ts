@@ -3,7 +3,7 @@ import { ShutdownChecker } from "../types/shutdown-checker";
 import { TransactionLocation } from "../types/transaction-location";
 import { TriggerableMonitor } from "./triggerable-monitor";
 
-const AUTHORIZED_BLOCK_INTERVAL = 5;
+const AUTHORIZED_BLOCK_INTERVAL = 1;
 
 export abstract class NineChroniclesMonitor<
     TEventData,
