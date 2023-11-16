@@ -1,6 +1,6 @@
 import { Address } from "@planetarium/account";
-import { TxId } from "./txid";
 import { FungibleAssetValue } from "@planetarium/tx";
+import { TxId } from "./txid";
 
 export interface AssetTransferredEvent {
     txId: TxId;

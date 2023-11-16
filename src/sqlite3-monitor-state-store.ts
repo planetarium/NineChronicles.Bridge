@@ -1,7 +1,7 @@
-import { IMonitorStateStore } from "./interfaces/monitor-state-store";
-import { Database } from "sqlite3";
-import { TransactionLocation } from "./types/transaction-location";
 import { promisify } from "util";
+import { Database } from "sqlite3";
+import { IMonitorStateStore } from "./interfaces/monitor-state-store";
+import { TransactionLocation } from "./types/transaction-location";
 
 export class Sqlite3MonitorStateStore implements IMonitorStateStore {
     private readonly _database: Database;
@@ -37,16 +37,15 @@ export class Sqlite3MonitorStateStore implements IMonitorStateStore {
 
     store(
         network: string,
-        transactionLocation: TransactionLocation
+        transactionLocation: TransactionLocation,
     ): Promise<void> {
         this.checkClosed();
 
-        const run: (sql: string, params: any[]) => Promise<void> = promisify(
-            this._database.run.bind(this._database)
-        );
+        const run: (sql: string, params: unknown[]) => Promise<void> =
+            promisify(this._database.run.bind(this._database));
         return run(
             "INSERT OR REPLACE INTO monitor_states(network, block_hash, tx_id) VALUES (?, ?, ?)",
-            [network, transactionLocation.blockHash, transactionLocation.txId]
+            [network, transactionLocation.blockHash, transactionLocation.txId],
         );
     }
 
@@ -54,12 +53,12 @@ export class Sqlite3MonitorStateStore implements IMonitorStateStore {
         this.checkClosed();
         const get: (
             sql: string,
-            params: any[]
+            params: unknown[],
         ) => Promise<{ block_hash: string; tx_id: string } | undefined> =
             promisify(this._database.get.bind(this._database));
         const row = await get(
             "SELECT block_hash, tx_id FROM monitor_states WHERE network = ?",
-            [network]
+            [network],
         );
 
         if (row === undefined) {
@@ -79,7 +78,7 @@ export class Sqlite3MonitorStateStore implements IMonitorStateStore {
     private checkClosed(): void {
         if (this.closed) {
             throw new Error(
-                "This internal SQLite3 database is already closed."
+                "This internal SQLite3 database is already closed.",
             );
         }
     }

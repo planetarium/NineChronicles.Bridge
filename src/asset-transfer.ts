@@ -1,7 +1,12 @@
-import { FungibleAssetValue, encodeCurrency, encodeSignedTx, signTx } from "@planetarium/tx";
-import { IAssetTransfer } from "./interfaces/asset-transfer";
 import { Address } from "@planetarium/account";
 import { RecordView } from "@planetarium/bencodex";
+import {
+    FungibleAssetValue,
+    encodeCurrency,
+    encodeSignedTx,
+    signTx,
+} from "@planetarium/tx";
+import { IAssetTransfer } from "./interfaces/asset-transfer";
 import { Signer } from "./signer";
 
 export class AssetTransfer implements IAssetTransfer {
@@ -11,7 +16,11 @@ export class AssetTransfer implements IAssetTransfer {
         this.signer = signer;
     }
 
-    async transfer(recipient: Address, amount: FungibleAssetValue, memo: string): Promise<string> {
+    async transfer(
+        recipient: Address,
+        amount: FungibleAssetValue,
+        memo: string,
+    ): Promise<string> {
         const sender = (await this.signer.getAddress()).toBytes();
         const action = new RecordView(
             {
@@ -24,7 +33,7 @@ export class AssetTransfer implements IAssetTransfer {
                     sender: Buffer.from(sender),
                 },
             },
-            "text"
+            "text",
         );
 
         return await this.signer.sendTx(action);

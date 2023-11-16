@@ -1,5 +1,5 @@
-import { FungibleAssetValue, encodeCurrency } from "@planetarium/tx";
 import { RecordView } from "@planetarium/bencodex";
+import { FungibleAssetValue, encodeCurrency } from "@planetarium/tx";
 import { IAssetBurner } from "./interfaces/asset-burner";
 import { Signer } from "./signer";
 
@@ -17,14 +17,11 @@ export class AssetBurner implements IAssetBurner {
                 type_id: "burn_asset",
                 values: [
                     sender,
-                    [
-                        encodeCurrency(amount.currency),
-                        amount.rawValue,
-                    ],
-                    memo
+                    [encodeCurrency(amount.currency), amount.rawValue],
+                    memo,
                 ],
             },
-            "text"
+            "text",
         );
 
         return await this.signer.sendTx(action);

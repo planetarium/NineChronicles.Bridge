@@ -1,29 +1,35 @@
 import { Address } from "@planetarium/account";
-import { encodeCurrency } from "@planetarium/tx";
-import { IFungibleAssetValues, IFungibleItems, IMinter } from "./interfaces/minter";
 import { RecordView, Value } from "@planetarium/bencodex";
+import { encodeCurrency } from "@planetarium/tx";
+import {
+    IFungibleAssetValues,
+    IFungibleItems,
+    IMinter,
+} from "./interfaces/minter";
 import { Signer } from "./signer";
-
 
 export class Minter implements IMinter {
     private readonly signer: Signer;
-    
+
     constructor(signer: Signer) {
         this.signer = signer;
     }
-    
-    async mintAssets(assets: [IFungibleAssetValues | IFungibleItems], memo: string | null): Promise<string> {
-        const action = new RecordView(            
+
+    async mintAssets(
+        assets: [IFungibleAssetValues | IFungibleItems],
+        memo: string | null,
+    ): Promise<string> {
+        const action = new RecordView(
             {
                 type_id: "mint_assets",
                 values: [memo, ...assets.map(encodeMintSpec)],
             },
-            "text"
+            "text",
         );
 
         return await this.signer.sendTx(action);
     }
-    
+
     getMinterAddress(): Promise<Address> {
         return this.signer.getAddress();
     }
@@ -34,11 +40,8 @@ function encodeMintSpec(value: IFungibleAssetValues | IFungibleItems): Value {
         const favs = value as IFungibleAssetValues;
         return [
             Address.fromHex(favs.recipient, true).toBytes(),
-            [
-                encodeCurrency(favs.amount.currency),
-                favs.amount.rawValue,
-            ],
-            null
+            [encodeCurrency(favs.amount.currency), favs.amount.rawValue],
+            null,
         ];
     } else {
         const fis = value as IFungibleItems;
@@ -46,6 +49,6 @@ function encodeMintSpec(value: IFungibleAssetValues | IFungibleItems): Value {
             Address.fromHex(fis.recipient, true).toBytes(),
             null,
             [Buffer.from(fis.fungibleItemId, "hex"), BigInt(fis.count)],
-        ]
+        ];
     }
 }

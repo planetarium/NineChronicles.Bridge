@@ -1,17 +1,17 @@
-import { TriggerableMonitor } from "./triggerable-monitor";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
 import { TransactionLocation } from "../types/transaction-location";
+import { TriggerableMonitor } from "./triggerable-monitor";
 
 const AUTHORIZED_BLOCK_INTERVAL = 5;
 
-export abstract class NineChroniclesMonitor<TEventData> extends TriggerableMonitor<
-    TEventData & TransactionLocation
->  {
+export abstract class NineChroniclesMonitor<
+    TEventData,
+> extends TriggerableMonitor<TEventData & TransactionLocation> {
     protected readonly _headlessGraphQLClient: IHeadlessGraphQLClient;
 
     constructor(
         latestTransactionLocation: TransactionLocation | null,
-        headlessGraphQLClient: IHeadlessGraphQLClient
+        headlessGraphQLClient: IHeadlessGraphQLClient,
     ) {
         super(latestTransactionLocation);
 
@@ -21,25 +21,25 @@ export abstract class NineChroniclesMonitor<TEventData> extends TriggerableMonit
     protected async processRemains(transactionLocation: TransactionLocation) {
         const blockHash = transactionLocation.blockHash;
         const blockIndex = await this.getBlockIndex(
-            transactionLocation.blockHash
+            transactionLocation.blockHash,
         );
         const authorizedBlockIndex =
             Math.floor(
                 (blockIndex + AUTHORIZED_BLOCK_INTERVAL - 1) /
-                    AUTHORIZED_BLOCK_INTERVAL
+                    AUTHORIZED_BLOCK_INTERVAL,
             ) * AUTHORIZED_BLOCK_INTERVAL;
-        const remainedEvents: { blockHash: string; events: any[] }[] = Array(
-            authorizedBlockIndex - blockIndex + 1
-        );
+        const remainedEvents: {
+            blockHash: string;
+            events: (TEventData & TransactionLocation)[];
+        }[] = Array(authorizedBlockIndex - blockIndex + 1);
         const events = await this.getEvents(blockIndex);
         const returnEvents = [];
-        let skip: boolean = true;
+        let skip = true;
         for (const event of events) {
             if (skip) {
                 if (event.txId === transactionLocation.txId) {
                     skip = false;
                 }
-                continue;
             } else {
                 returnEvents.push(event);
             }

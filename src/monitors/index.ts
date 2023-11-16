@@ -1,5 +1,5 @@
-import { BlockHash } from "../types/block-hash";
 import { IObserver } from "../observers";
+import { BlockHash } from "../types/block-hash";
 
 type IMonitorObserver<TEvent> = IObserver<{
     blockHash: BlockHash;
@@ -7,7 +7,7 @@ type IMonitorObserver<TEvent> = IObserver<{
 }>;
 
 export abstract class Monitor<TEvent> {
-    private readonly _observers: Map<Symbol, IMonitorObserver<TEvent>>;
+    private readonly _observers: Map<symbol, IMonitorObserver<TEvent>>;
     private running: boolean;
 
     protected constructor() {
