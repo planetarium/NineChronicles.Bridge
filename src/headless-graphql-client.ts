@@ -12,6 +12,8 @@ import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
 import { AssetTransferredEvent } from "./types/asset-transferred-event";
 import { BlockHash } from "./types/block-hash";
 import { GarageUnloadEvent } from "./types/garage-unload-event";
+import { TransactionResult } from "./types/transaction-result";
+import { TxId } from "./types/txid";
 
 function delay(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -238,6 +240,18 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         });
 
         return response.data.data.stageTransaction;
+    }
+
+    async getTransactionResult(txId: TxId): Promise<TransactionResult> {
+        const query =
+            "query GetTransactionResult($txId: TxId!) { transaction { transactionResult(txId: $txId) { txStatus } } }";
+        const response = await this.graphqlRequest({
+            operationName: "GetTransactionResult",
+            query,
+            variables: { txId },
+        });
+
+        return response.data.data.transaction.transactionResult;
     }
 
     private async graphqlRequest(

@@ -27,12 +27,24 @@ export class AssetsTransferredMonitor extends NineChroniclesMonitor<AssetTransfe
     ): Promise<(AssetTransferredEvent & TransactionLocation)[]> {
         const blockHash =
             await this._headlessGraphQLClient.getBlockHash(blockIndex);
-        return (
+        const events =
             await this._headlessGraphQLClient.getAssetTransferredEvents(
                 blockIndex,
                 this._address,
-            )
-        ).map((ev) => {
+            );
+
+        const successEvents: AssetTransferredEvent[] = [];
+        for (const event of events) {
+            const { txStatus } =
+                await this._headlessGraphQLClient.getTransactionResult(
+                    event.txId,
+                );
+            if (txStatus === "SUCCESS") {
+                successEvents.push(event);
+            }
+        }
+
+        return successEvents.map((ev) => {
             return { blockHash, ...ev };
         });
     }
