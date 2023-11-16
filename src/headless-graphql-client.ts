@@ -1,11 +1,17 @@
+import { Address } from "@planetarium/account";
+import {
+    BencodexDictionary,
+    Dictionary,
+    Value,
+    decode,
+    encode,
+} from "@planetarium/bencodex";
+import { Currency, FungibleAssetValue } from "@planetarium/tx";
 import axios, { AxiosResponse } from "axios";
 import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
+import { AssetTransferredEvent } from "./types/asset-transferred-event";
 import { BlockHash } from "./types/block-hash";
 import { GarageUnloadEvent } from "./types/garage-unload-event";
-import { BencodexDictionary, Dictionary, Value, decode, encode } from "@planetarium/bencodex";
-import { Address } from "@planetarium/account";
-import { Currency, FungibleAssetValue } from "@planetarium/tx";
-import { AssetTransferredEvent } from "./types/asset-transferred-event";
 
 function delay(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -30,7 +36,11 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         this._maxRetry = maxRetry;
     }
 
-    async getGarageUnloadEvents(blockIndex: number, agentAddress: Address, avatarAddress: Address): Promise<GarageUnloadEvent[]> {
+    async getGarageUnloadEvents(
+        blockIndex: number,
+        agentAddress: Address,
+        avatarAddress: Address,
+    ): Promise<GarageUnloadEvent[]> {
         const query = `query GetGarageUnloads($startingBlockIndex: Long!){
             transaction {
               ncTransactions(startingBlockIndex: $startingBlockIndex, actionType: "unload_from_my_garages*" limit: 1){
@@ -46,37 +56,47 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
             operationName: "GetGarageUnloads",
             variables: {
                 startingBlockIndex: blockIndex,
-            }
+            },
         });
 
-        return data.data.transaction.ncTransactions.map(tx => {
-            const action = decode(Buffer.from(tx.actions[0].raw, "hex")) as Dictionary;
-            const values = (action.get("values") as Dictionary).get("l");
-            const recipientAvatarAddress = Address.fromBytes(values[0]);
-            const fungibleAssetValues: [Address, FungibleAssetValue][] =
-                (values[1] ?? []).map(args => [
+        return data.data.transaction.ncTransactions
+            .map((tx) => {
+                const action = decode(
+                    Buffer.from(tx.actions[0].raw, "hex"),
+                ) as Dictionary;
+                const values = (action.get("values") as Dictionary).get("l");
+                const recipientAvatarAddress = Address.fromBytes(values[0]);
+                const fungibleAssetValues: [Address, FungibleAssetValue][] = (
+                    values[1] ?? []
+                ).map((args) => [
                     Address.fromBytes(args[0]),
                     {
                         currency: decodeCurrency(args[1][0]),
                         rawValue: args[1][1],
-                    }
+                    },
                 ]);
-            const fungibleItems: [Address, string, number][] =
-                (values[2] ?? []).map(args => [
+                const fungibleItems: [Address, string, number][] = (
+                    values[2] ?? []
+                ).map((args) => [
                     recipientAvatarAddress,
                     Buffer.from(args[0]).toString("hex"),
-                    args[1]]);
-            const memo = values[3];
+                    args[1],
+                ]);
+                const memo = values[3];
 
-            return (!recipientAvatarAddress.equals(avatarAddress) && fungibleAssetValues.filter(fav => agentAddress.equals(fav[0])).length == 0)
-                ? null 
-                : {
-                    txId: tx.id,
-                    fungibleAssetValues,
-                    fungibleItems,
-                    memo,
-                };
-        }).filter(ev => ev !== null);
+                return !recipientAvatarAddress.equals(avatarAddress) &&
+                    fungibleAssetValues.filter((fav) =>
+                        agentAddress.equals(fav[0]),
+                    ).length === 0
+                    ? null
+                    : {
+                          txId: tx.id,
+                          fungibleAssetValues,
+                          fungibleItems,
+                          memo,
+                      };
+            })
+            .filter((ev) => ev !== null);
     }
 
     get endpoint(): string {
@@ -123,9 +143,11 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         return data.data.chainQuery.blockQuery.block.hash;
     }
 
-    async getAssetTransferredEvents(blockIndex: number, recipient: Address)
-        : Promise<AssetTransferredEvent[]> {
-            const query = `query GetAssetTransferred($blockIndex: Long!)
+    async getAssetTransferredEvents(
+        blockIndex: number,
+        recipient: Address,
+    ): Promise<AssetTransferredEvent[]> {
+        const query = `query GetAssetTransferred($blockIndex: Long!)
             {             
                 transaction {
                     ncTransactions(startingBlockIndex: $blockIndex, actionType: "^transfer_asset[0-9]*$", limit: 1) {
@@ -136,23 +158,33 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     }
                 }
             }`;
-            const { data } = await this.graphqlRequest({
-                operationName: "GetAssetTransferred",
-                query,
-                variables: { 
-                    blockIndex,
-                },
-            });
+        const { data } = await this.graphqlRequest({
+            operationName: "GetAssetTransferred",
+            query,
+            variables: {
+                blockIndex,
+            },
+        });
 
-            return data.data.transaction.ncTransactions.map(tx => {
+        return data.data.transaction.ncTransactions
+            .map((tx) => {
                 const txId = tx.id;
-                const action = decode(Buffer.from(tx.actions[0].raw, "hex")) as Dictionary;
-                const values = (action.get("values") as BencodexDictionary);
-                const sender = Address.fromBytes(values.get("sender") as Buffer);
-                const recipientOnTx = Address.fromBytes(values.get("recipient") as Buffer);
+                const action = decode(
+                    Buffer.from(tx.actions[0].raw, "hex"),
+                ) as Dictionary;
+                const values = action.get("values") as BencodexDictionary;
+                const sender = Address.fromBytes(
+                    values.get("sender") as Buffer,
+                );
+                const recipientOnTx = Address.fromBytes(
+                    values.get("recipient") as Buffer,
+                );
                 const memo = values.get("memo") as string;
-                const [rawCurrency, rawValue] = values.get("amount") as [BencodexDictionary, bigint];
-                const amount:FungibleAssetValue = {
+                const [rawCurrency, rawValue] = values.get("amount") as [
+                    BencodexDictionary,
+                    bigint,
+                ];
+                const amount: FungibleAssetValue = {
                     currency: decodeCurrency(rawCurrency),
                     rawValue,
                 };
@@ -168,9 +200,10 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     amount,
                     memo,
                 };
-            }).filter(ev => ev !== null);
+            })
+            .filter((ev) => ev !== null);
     }
-    
+
     async getNextTxNonce(address: string): Promise<number> {
         const query =
             "query GetNextTxNonce($address: Address!) { nextTxNonce(address: $address) } ";
@@ -196,7 +229,8 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     }
 
     async stageTransaction(payload: string): Promise<string> {
-        const query = `mutation StageTransaction($payload: String!) { stageTransaction(payload: $payload) }`;
+        const query =
+            "mutation StageTransaction($payload: String!) { stageTransaction(payload: $payload) }";
         const response = await this.graphqlRequest({
             operationName: "StageTransaction",
             query,
@@ -208,7 +242,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
 
     private async graphqlRequest(
         body: GraphQLRequestBody,
-        retry: number = this._maxRetry
+        retry: number = this._maxRetry,
     ): Promise<AxiosResponse> {
         try {
             const response = await axios.post(this._apiEndpoint, body, {
@@ -240,8 +274,7 @@ function decodeCurrency(bdict: BencodexDictionary): Currency {
         ticker: bdict.get("ticker").valueOf() as string,
         decimalPlaces: parseInt(`0x${dpAsHex}`),
         totalSupplyTrackable: false,
-        minters: bdict.get("minters")?.valueOf() as Set<Uint8Array> ?? null,
-        maximumSupply: null
+        minters: (bdict.get("minters")?.valueOf() as Set<Uint8Array>) ?? null,
+        maximumSupply: null,
     };
 }
-

@@ -1,40 +1,59 @@
 import { IObserver } from ".";
-import { IFungibleAssetValues, IFungibleItems, IMinter } from "../interfaces/minter";
+import {
+    IFungibleAssetValues,
+    IFungibleItems,
+    IMinter,
+} from "../interfaces/minter";
 import { IMonitorStateStore } from "../interfaces/monitor-state-store";
 import { BlockHash } from "../types/block-hash";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
 import { TransactionLocation } from "../types/transaction-location";
 
-export class GarageObserver implements IObserver<{
-    blockHash: BlockHash,
-    events: (GarageUnloadEvent & TransactionLocation)[];
-}> {
+export class GarageObserver
+    implements
+        IObserver<{
+            blockHash: BlockHash;
+            events: (GarageUnloadEvent & TransactionLocation)[];
+        }>
+{
     private readonly _minter: IMinter;
     private readonly _monitorStateStore: IMonitorStateStore;
-    
+
     constructor(monitorStateStore: IMonitorStateStore, minter: IMinter) {
         this._minter = minter;
         this._monitorStateStore = monitorStateStore;
     }
-    
-    async notify(data: { blockHash: BlockHash; events: (GarageUnloadEvent & TransactionLocation)[]; }): Promise<void> {
+
+    async notify(data: {
+        blockHash: BlockHash;
+        events: (GarageUnloadEvent & TransactionLocation)[];
+    }): Promise<void> {
         const { events } = data;
 
-        for ( const {blockHash, txId, fungibleAssetValues, fungibleItems, memo} of events)
-        {
+        for (const {
+            blockHash,
+            txId,
+            fungibleAssetValues,
+            fungibleItems,
+            memo,
+        } of events) {
             await this._monitorStateStore.store("nine-chronicles", {
                 blockHash,
                 txId,
             });
 
-            const { agentAddress, avatarAddress, memo: memoForMinter } = parseMemo(memo);
+            const {
+                agentAddress,
+                avatarAddress,
+                memo: memoForMinter,
+            } = parseMemo(memo);
 
             const requests: (IFungibleAssetValues | IFungibleItems)[] = [];
             for (const fa of fungibleAssetValues) {
                 requests.push({
                     recipient: agentAddress,
                     amount: fa[1],
-                })
+                });
             }
 
             for (const fi of fungibleItems) {
@@ -42,7 +61,7 @@ export class GarageObserver implements IObserver<{
                     recipient: avatarAddress,
                     fungibleItemId: fi[1],
                     count: fi[2],
-                })
+                });
             }
 
             if (requests.length !== 0) {
@@ -52,7 +71,11 @@ export class GarageObserver implements IObserver<{
         }
     }
 }
-function parseMemo(memo: string): { agentAddress: string; avatarAddress: string; memo: string; } {
+function parseMemo(memo: string): {
+    agentAddress: string;
+    avatarAddress: string;
+    memo: string;
+} {
     const parsed = JSON.parse(memo);
 
     return {
@@ -61,4 +84,3 @@ function parseMemo(memo: string): { agentAddress: string; avatarAddress: string;
         memo: parsed[2],
     };
 }
-

@@ -1,7 +1,7 @@
-import { Monitor } from ".";
 import { captureException } from "@sentry/node";
-import { TransactionLocation } from "../types/transaction-location";
+import { Monitor } from ".";
 import { BlockHash } from "../types/block-hash";
+import { TransactionLocation } from "../types/transaction-location";
 
 function delay(ms: number): Promise<void> {
     return new Promise((resolve) => {
@@ -30,7 +30,7 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
 
     constructor(
         latestTransactionLocation: TransactionLocation | null,
-        delayMilliseconds: number = 15 * 1000
+        delayMilliseconds: number = 15 * 1000,
     ) {
         super();
 
@@ -60,11 +60,11 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
                 const tipIndex = await this.getTipIndex();
                 this.debug(
                     "Try to check trigger at",
-                    this.latestBlockNumber + 1
+                    this.latestBlockNumber + 1,
                 );
                 if (this.latestBlockNumber + 1 <= tipIndex) {
                     const trigerredBlockIndexes = this.triggerredBlocks(
-                        this.latestBlockNumber + 1
+                        this.latestBlockNumber + 1,
                     );
 
                     for (const blockIndex of trigerredBlockIndexes) {
@@ -80,7 +80,7 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
                     this.latestBlockNumber += 1;
                 } else {
                     this.debug(
-                        `Skip check trigger current: ${this.latestBlockNumber} / tip: ${tipIndex}`
+                        `Skip check trigger current: ${this.latestBlockNumber} / tip: ${tipIndex}`,
                     );
 
                     await delay(this._delayMilliseconds);
@@ -88,7 +88,7 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
             } catch (error) {
                 this.error(
                     "Ignore and continue loop without breaking though unexpected error occurred:",
-                    error
+                    error,
                 );
                 captureException(error);
             }
@@ -96,16 +96,16 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
     }
 
     protected abstract processRemains(
-        transactionLocation: TransactionLocation
+        transactionLocation: TransactionLocation,
     ): Promise<ProcessRemainsResult<TEventData>>;
 
     protected abstract triggerredBlocks(blockIndex: number): number[];
 
-    private debug(message?: any, ...optionalParams: any[]): void {
+    private debug(message?: unknown, ...optionalParams: unknown[]): void {
         console.debug(`[${this.constructor.name}]`, message, ...optionalParams);
     }
 
-    private error(message?: any, ...optionalParams: any[]): void {
+    private error(message?: unknown, ...optionalParams: unknown[]): void {
         console.error(`[${this.constructor.name}]`, message, ...optionalParams);
     }
 
@@ -116,6 +116,6 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
     protected abstract getTipIndex(): Promise<number>;
 
     protected abstract getEvents(
-        blockIndex: number
+        blockIndex: number,
     ): Promise<(TEventData & TransactionLocation)[]>;
 }

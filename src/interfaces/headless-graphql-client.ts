@@ -1,7 +1,7 @@
 import { Address } from "@planetarium/account";
+import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { BlockHash } from "../types/block-hash";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
-import { AssetTransferredEvent } from "../types/asset-transferred-event";
 
 export interface IHeadlessGraphQLClient {
     readonly endpoint: string;

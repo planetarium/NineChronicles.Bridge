@@ -1,13 +1,13 @@
-import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
-import { TransactionLocation } from "../types/transaction-location";
-import { GarageUnloadEvent } from "../types/garage-unload-event";
-import { NineChroniclesMonitor } from "./ninechronicles-block-monitor";
 import { Address } from "@planetarium/account";
+import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
+import { GarageUnloadEvent } from "../types/garage-unload-event";
+import { TransactionLocation } from "../types/transaction-location";
+import { NineChroniclesMonitor } from "./ninechronicles-block-monitor";
 
 export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent> {
     private readonly _agentAddress: Address;
     private readonly _avatarAddress: Address;
-    
+
     constructor(
         latestTransactionLocation: TransactionLocation | null,
         headlessGraphQLClient: IHeadlessGraphQLClient,
@@ -20,19 +20,18 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
     }
 
     protected async getEvents(
-        blockIndex: number
+        blockIndex: number,
     ): Promise<(GarageUnloadEvent & TransactionLocation)[]> {
-        const blockHash = await this._headlessGraphQLClient.getBlockHash(
-            blockIndex
-        );
+        const blockHash =
+            await this._headlessGraphQLClient.getBlockHash(blockIndex);
         const events = await this._headlessGraphQLClient.getGarageUnloadEvents(
             blockIndex,
             this._agentAddress,
-            this._avatarAddress
+            this._avatarAddress,
         );
 
-        return events.map(ev => {
-            return { blockHash, ...ev }
+        return events.map((ev) => {
+            return { blockHash, ...ev };
         });
     }
 }
