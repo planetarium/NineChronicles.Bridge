@@ -36,7 +36,18 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
             this._avatarAddress,
         );
 
-        return events.map((ev) => {
+        const successEvents: GarageUnloadEvent[] = [];
+        for (const event of events) {
+            const { txStatus } =
+                await this._headlessGraphQLClient.getTransactionResult(
+                    event.txId,
+                );
+            if (txStatus === "SUCCESS") {
+                successEvents.push(event);
+            }
+        }
+
+        return successEvents.map((ev) => {
             return { blockHash, ...ev };
         });
     }
