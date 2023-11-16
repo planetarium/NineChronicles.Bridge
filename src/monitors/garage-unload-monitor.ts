@@ -1,6 +1,7 @@
 import { Address } from "@planetarium/account";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
+import { ShutdownChecker } from "../types/shutdown-checker";
 import { TransactionLocation } from "../types/transaction-location";
 import { NineChroniclesMonitor } from "./ninechronicles-block-monitor";
 
@@ -10,11 +11,16 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
 
     constructor(
         latestTransactionLocation: TransactionLocation | null,
+        shutdownChecker: ShutdownChecker,
         headlessGraphQLClient: IHeadlessGraphQLClient,
         agentAddress: Address,
         avatarAddress: Address,
     ) {
-        super(latestTransactionLocation, headlessGraphQLClient);
+        super(
+            latestTransactionLocation,
+            shutdownChecker,
+            headlessGraphQLClient,
+        );
         this._agentAddress = agentAddress;
         this._avatarAddress = avatarAddress;
     }

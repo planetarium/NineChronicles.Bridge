@@ -1,6 +1,7 @@
 import { captureException } from "@sentry/node";
 import { Monitor } from ".";
 import { BlockHash } from "../types/block-hash";
+import { ShutdownChecker } from "../types/shutdown-checker";
 import { TransactionLocation } from "../types/transaction-location";
 
 function delay(ms: number): Promise<void> {
@@ -26,15 +27,18 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
     private latestBlockNumber: number | undefined;
 
     private readonly _latestTransactionLocation: TransactionLocation | null;
+    private readonly _shutdownChecker: ShutdownChecker;
     private readonly _delayMilliseconds: number;
 
     constructor(
         latestTransactionLocation: TransactionLocation | null,
+        shutdownChecker: ShutdownChecker,
         delayMilliseconds: number = 15 * 1000,
     ) {
         super();
 
         this._latestTransactionLocation = latestTransactionLocation;
+        this._shutdownChecker = shutdownChecker;
         this._delayMilliseconds = delayMilliseconds;
     }
 
@@ -55,7 +59,11 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
             this.latestBlockNumber = await this.getTipIndex();
         }
 
-        while (true) {
+        while (!this._shutdownChecker.isShutdown()) {
+            console.log(
+                "shutdownChecker.isShutdown",
+                this._shutdownChecker.isShutdown(),
+            );
             try {
                 const tipIndex = await this.getTipIndex();
                 this.debug(
