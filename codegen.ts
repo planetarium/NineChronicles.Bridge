@@ -10,6 +10,10 @@ const config: CodegenConfig = {
       plugins: [],
       config: {
         scalars: {
+          ID: {
+            input: "string | number",
+            output: "string",
+          },
           Address: {
             input: "string",
             output: "string",
