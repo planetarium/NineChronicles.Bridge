@@ -1,90 +1,117 @@
+import { captureException } from "@sentry/node";
+import { Monitor } from ".";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
 import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
+import { BlockHash } from "../types/block-hash";
 import { ShutdownChecker } from "../types/shutdown-checker";
 import { TransactionLocation } from "../types/transaction-location";
-import { TriggerableMonitor } from "./triggerable-monitor";
 
-const AUTHORIZED_BLOCK_INTERVAL = 1;
+function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve();
+        }, ms);
+    });
+}
 
-export abstract class NineChroniclesMonitor<
-    TEventData,
-> extends TriggerableMonitor<TEventData & TransactionLocation> {
+export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
+    TEventData & TransactionLocation
+> {
+    private readonly _monitorStateHandler: IMonitorStateHandler;
+    private readonly _shutdownChecker: ShutdownChecker;
+    private readonly _delayMilliseconds: number;
+
     protected readonly _headlessGraphQLClient: IHeadlessGraphQLClient;
+
+    private latestBlockNumber: number | undefined;
 
     constructor(
         monitorStateHandler: IMonitorStateHandler,
         shutdownChecker: ShutdownChecker,
         headlessGraphQLClient: IHeadlessGraphQLClient,
+        delayMilliseconds: number = 15 * 1000,
     ) {
-        super(monitorStateHandler, shutdownChecker);
+        super();
 
+        this._monitorStateHandler = monitorStateHandler;
+        this._shutdownChecker = shutdownChecker;
         this._headlessGraphQLClient = headlessGraphQLClient;
+        this._delayMilliseconds = delayMilliseconds;
     }
 
-    protected async processRemains(transactionLocation: TransactionLocation) {
-        const blockHash = transactionLocation.blockHash;
-        const blockIndex = await this.getBlockIndex(
-            transactionLocation.blockHash,
-        );
-        const authorizedBlockIndex =
-            Math.floor(
-                (blockIndex + AUTHORIZED_BLOCK_INTERVAL - 1) /
-                    AUTHORIZED_BLOCK_INTERVAL,
-            ) * AUTHORIZED_BLOCK_INTERVAL;
-        const remainedEvents: {
-            blockHash: string;
-            events: (TEventData & TransactionLocation)[];
-        }[] = Array(authorizedBlockIndex - blockIndex + 1);
-        const events = await this.getEvents(blockIndex);
-        const returnEvents = [];
-        let skip = true;
-        for (const event of events) {
-            if (skip) {
-                if (event.txId === transactionLocation.txId) {
-                    skip = false;
+    async *loop(): AsyncIterableIterator<{
+        blockHash: BlockHash;
+        events: (TEventData & TransactionLocation)[];
+    }> {
+        const nullableLatestBlockHash = await this._monitorStateHandler.load();
+        if (nullableLatestBlockHash !== null) {
+            this.latestBlockNumber = await this.getBlockIndex(
+                nullableLatestBlockHash,
+            );
+        } else {
+            this.latestBlockNumber = await this.getTipIndex();
+        }
+
+        while (!this._shutdownChecker.isShutdown()) {
+            console.log(
+                "shutdownChecker.isShutdown",
+                this._shutdownChecker.isShutdown(),
+            );
+            try {
+                const tipIndex = await this.getTipIndex();
+                this.debug("Try to execute at", this.latestBlockNumber + 1);
+                if (this.latestBlockNumber + 1 <= tipIndex) {
+                    const blockIndex = this.latestBlockNumber;
+
+                    this.debug("Execute block #", blockIndex);
+                    const blockHash = await this.getBlockHash(blockIndex);
+
+                    yield {
+                        blockHash,
+                        events: await this.getEvents(blockIndex),
+                    };
+
+                    await this._monitorStateHandler.store(blockHash);
+
+                    this.latestBlockNumber += 1;
+                } else {
+                    this.debug(
+                        `Skip. lastestBlockNumber: ${this.latestBlockNumber} / tip: ${tipIndex}`,
+                    );
+
+                    await delay(this._delayMilliseconds);
                 }
-            } else {
-                returnEvents.push(event);
+            } catch (error) {
+                this.error(
+                    "Ignore and continue loop without breaking though unexpected error occurred:",
+                    error,
+                );
+                captureException(error);
             }
         }
-
-        remainedEvents[0] = { blockHash, events: returnEvents };
-
-        for (let i = 1; i <= authorizedBlockIndex - blockIndex; ++i) {
-            remainedEvents[i] = {
-                blockHash: await this.getBlockHash(blockIndex + i),
-                events: await this.getEvents(blockIndex + i),
-            };
-        }
-
-        return {
-            nextBlockIndex: authorizedBlockIndex,
-            remainedEvents: remainedEvents,
-        };
     }
 
-    protected triggerredBlocks(blockIndex: number): number[] {
-        if (blockIndex !== 0 && blockIndex % AUTHORIZED_BLOCK_INTERVAL === 0) {
-            const blockIndexes = Array(AUTHORIZED_BLOCK_INTERVAL);
-            for (let i = 0; i < AUTHORIZED_BLOCK_INTERVAL; ++i) {
-                blockIndexes[i] =
-                    blockIndex - AUTHORIZED_BLOCK_INTERVAL + 1 + i;
-            }
-            return blockIndexes;
-        }
-
-        return [];
+    protected debug(message?: unknown, ...optionalParams: unknown[]): void {
+        console.debug(`[${this.constructor.name}]`, message, ...optionalParams);
     }
 
-    protected getBlockIndex(blockHash: string) {
+    protected error(message?: unknown, ...optionalParams: unknown[]): void {
+        console.error(`[${this.constructor.name}]`, message, ...optionalParams);
+    }
+
+    protected abstract getEvents(
+        blockIndex: number,
+    ): Promise<(TEventData & TransactionLocation)[]>;
+
+    private getBlockIndex(blockHash: string) {
         return this._headlessGraphQLClient.getBlockIndex(blockHash);
     }
 
-    protected getTipIndex(): Promise<number> {
+    private getTipIndex(): Promise<number> {
         return this._headlessGraphQLClient.getTipIndex();
     }
 
-    protected getBlockHash(blockIndex: number) {
+    private getBlockHash(blockIndex: number) {
         return this._headlessGraphQLClient.getBlockHash(blockIndex);
     }
 }
