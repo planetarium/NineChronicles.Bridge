@@ -4,7 +4,6 @@ import {
     IFungibleItems,
     IMinter,
 } from "../interfaces/minter";
-import { IMonitorStateStore } from "../interfaces/monitor-state-store";
 import { BlockHash } from "../types/block-hash";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
 import { TransactionLocation } from "../types/transaction-location";
@@ -17,11 +16,9 @@ export class GarageObserver
         }>
 {
     private readonly _minter: IMinter;
-    private readonly _monitorStateStore: IMonitorStateStore;
 
-    constructor(monitorStateStore: IMonitorStateStore, minter: IMinter) {
+    constructor(minter: IMinter) {
         this._minter = minter;
-        this._monitorStateStore = monitorStateStore;
     }
 
     async notify(data: {
@@ -37,11 +34,6 @@ export class GarageObserver
             fungibleItems,
             memo,
         } of events) {
-            await this._monitorStateStore.store("nine-chronicles", {
-                blockHash,
-                txId,
-            });
-
             const {
                 agentAddress,
                 avatarAddress,

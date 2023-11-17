@@ -1,7 +1,6 @@
 import { FungibleAssetValue } from "@planetarium/tx";
 import { IObserver } from ".";
 import { IMinter } from "../interfaces/minter";
-import { IMonitorStateStore } from "../interfaces/monitor-state-store";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { BlockHash } from "../types/block-hash";
 import { TransactionLocation } from "../types/transaction-location";
@@ -13,11 +12,9 @@ export class AssetTransferredObserver
             events: (AssetTransferredEvent & TransactionLocation)[];
         }>
 {
-    private readonly _monitorStateStore: IMonitorStateStore;
     private readonly _minter: IMinter;
 
-    constructor(monitorStateStore: IMonitorStateStore, minter: IMinter) {
-        this._monitorStateStore = monitorStateStore;
+    constructor(minter: IMinter) {
         this._minter = minter;
     }
 
@@ -28,11 +25,6 @@ export class AssetTransferredObserver
         const { events } = data;
 
         for (const { blockHash, txId, amount, memo: recipient } of events) {
-            await this._monitorStateStore.store("nine-chronicles", {
-                blockHash,
-                txId,
-            });
-
             // TODO check memo & refund if needed.
 
             // Strip minters to mint well.

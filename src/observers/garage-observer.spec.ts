@@ -17,7 +17,7 @@ test("notify", async () => {
         ),
     );
     const minter = new Minter(signer);
-    const observer = new GarageObserver(monitorStateStore, minter);
+    const observer = new GarageObserver(minter);
     observer.notify({
         blockHash: "xxx",
         events: [

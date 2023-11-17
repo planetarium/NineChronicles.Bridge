@@ -1,4 +1,5 @@
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
+import { IMonitorStateStore } from "../interfaces/monitor-state-store";
 import { ShutdownChecker } from "../types/shutdown-checker";
 import { TransactionLocation } from "../types/transaction-location";
 import { TriggerableMonitor } from "./triggerable-monitor";
@@ -11,11 +12,11 @@ export abstract class NineChroniclesMonitor<
     protected readonly _headlessGraphQLClient: IHeadlessGraphQLClient;
 
     constructor(
-        latestTransactionLocation: TransactionLocation | null,
+        monitorStateStore: IMonitorStateStore,
         shutdownChecker: ShutdownChecker,
         headlessGraphQLClient: IHeadlessGraphQLClient,
     ) {
-        super(latestTransactionLocation, shutdownChecker);
+        super(monitorStateStore, shutdownChecker);
 
         this._headlessGraphQLClient = headlessGraphQLClient;
     }

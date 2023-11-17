@@ -34,20 +34,20 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 
     const upstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
-            await monitorStateStore.load("nineChronicles"),
+            monitorStateStore,
             shutdownHandler,
             upstreamGQLClient,
             Address.fromHex(process.env.NC_VAULT_ADDRESS),
         );
     const downstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
-            await monitorStateStore.load("nineChronicles"),
+            monitorStateStore,
             shutdownHandler,
             downstreamGQLClient,
             Address.fromHex(process.env.NC_VAULT_ADDRESS),
         );
     const garageMonitor = new GarageUnloadMonitor(
-        await monitorStateStore.load("nineChronicles"),
+        monitorStateStore,
         shutdownHandler,
         upstreamGQLClient,
         Address.fromHex(process.env.NC_VAULT_ADDRESS),
@@ -70,14 +70,14 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
     const downstreamBurner = new AssetBurner(downstreamSigner);
 
     upstreamAssetsTransferredMonitorMonitor.attach(
-        new AssetTransferredObserver(monitorStateStore, minter),
+        new AssetTransferredObserver(minter),
     );
 
     downstreamAssetsTransferredMonitorMonitor.attach(
         new AssetDownstreamObserver(upstreamTransfer, downstreamBurner),
     );
 
-    garageMonitor.attach(new GarageObserver(monitorStateStore, minter));
+    garageMonitor.attach(new GarageObserver(minter));
 
     upstreamAssetsTransferredMonitorMonitor.run();
     downstreamAssetsTransferredMonitorMonitor.run();
