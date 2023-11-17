@@ -1,0 +1,7 @@
+query GetTransactionResult($txId: TxId!) {
+  transaction {
+    transactionResult(txId: $txId) {
+      txStatus
+    }
+  }
+}

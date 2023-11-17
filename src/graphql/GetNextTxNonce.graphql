@@ -1,0 +1,3 @@
+query GetNextTxNonce($address: Address!) {
+  nextTxNonce(address: $address)
+}

@@ -1,0 +1,14 @@
+query GetGarageUnloads($startingBlockIndex: Long!) {
+  transaction {
+    ncTransactions(
+      startingBlockIndex: $startingBlockIndex
+      actionType: "unload_from_my_garages*"
+      limit: 1
+    ) {
+      id
+      actions {
+        raw
+      }
+    }
+  }
+}
