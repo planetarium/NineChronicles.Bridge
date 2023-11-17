@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@planetarium/account": "^3.7.0",
+    "@planetarium/account-aws-kms": "^3.7.0",
     "@planetarium/bencodex": "^0.2.2",
     "@planetarium/tx": "^3.7.0",
     "@sentry/node": "^7.76.0",

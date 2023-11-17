@@ -1,5 +1,6 @@
 import { Address, RawPrivateKey } from "@planetarium/account";
 import "dotenv/config";
+import { getAccountFromEnv } from "./accounts";
 import { AssetBurner } from "./asset-burner";
 import { AssetTransfer } from "./asset-transfer";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
@@ -64,12 +65,8 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
         Address.fromHex(process.env.NC_VAULT_AVATAR_ADDRESS),
     );
 
-    const upstreamAccount = RawPrivateKey.fromHex(
-        process.env.NC_UPSTREAM_PRIVATE_KEY,
-    );
-    const downstreamAccount = RawPrivateKey.fromHex(
-        process.env.NC_DOWNSTREAM_PRIVATE_KEY,
-    );
+    const upstreamAccount = getAccountFromEnv("NC_UPSTREAM");
+    const downstreamAccount = getAccountFromEnv("NC_DOWNSTREAM");
 
     const upstreamSigner = new Signer(upstreamAccount, upstreamGQLClient);
     const downstreamSigner = new Signer(downstreamAccount, downstreamGQLClient);
