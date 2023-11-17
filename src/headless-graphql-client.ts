@@ -2,37 +2,31 @@ import { Address } from "@planetarium/account";
 import {
     BencodexDictionary,
     Dictionary,
-    Value,
     decode,
-    encode,
 } from "@planetarium/bencodex";
 import { Currency, FungibleAssetValue } from "@planetarium/tx";
-import { gql, Client, cacheExchange, fetchExchange, subscriptionExchange } from "urql";
-import { retryExchange } from '@urql/exchange-retry';
+import { Client, cacheExchange, fetchExchange } from "@urql/core";
+import { retryExchange } from "@urql/exchange-retry";
 import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
 import { AssetTransferredEvent } from "./types/asset-transferred-event";
 import { BlockHash } from "./types/block-hash";
 import { GarageUnloadEvent } from "./types/garage-unload-event";
 import { TransactionResult } from "./types/transaction-result";
 import { TxId } from "./types/txid";
-
-function delay(ms: number): Promise<void> {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve();
-        }, ms);
-    });
-}
-
-interface GraphQLRequestBody {
-    operationName: string | null;
-    query: string;
-    variables: Record<string, unknown>;
-}
+import {
+  GetAssetTransferredDocument,
+  GetBlockHashDocument,
+  GetBlockIndexDocument,
+  GetGarageUnloadsDocument,
+  GetNextTxNonceDocument,
+  GetTipIndexDocument,
+  GetTransactionResultDocument,
+  StageTransactionDocument,
+} from "./generated/graphql";
 
 export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     private readonly _client: Client;
-    private readonly _fallbackUrl: URL
+  private readonly _fallbackUrl: URL;
 
     constructor(apiEndpoint: string, maxRetry: number) {
         this._client = new Client({
@@ -46,15 +40,20 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     maxNumberAttempts: maxRetry,
                     retryWith: (error, operation) => {
                         console.error(error.message);
+            // https://formidable.com/open-source/urql/docs/basics/errors/
+            // This automatically distinguish, log, process Network / GQL error.
                         if (error.networkError) {
-                            const context = { ...operation.context, url: this._fallbackUrl.toString() };
+              const context = {
+                ...operation.context,
+                url: this._fallbackUrl.toString(),
+              };
                             return { ...operation, context };
                           }
-                    }
+          },
                 }),
                 fetchExchange,
-            ]
-        })
+      ],
+    });
     }
 
     async getGarageUnloadEvents(
@@ -262,42 +261,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     }
 
     async getTransactionResult(txId: TxId): Promise<TransactionResult> {
-        const query =
-            "query GetTransactionResult($txId: TxId!) { transaction { transactionResult(txId: $txId) { txStatus } } }";
-        const response = await this.graphqlRequest({
-            operationName: "GetTransactionResult",
-            query,
-            variables: { txId },
-        });
-
-        return response.data.data.transaction.transactionResult;
-    }
-
-    private async graphqlRequest(
-        body: GraphQLRequestBody,
-        retry: number = this._maxRetry,
-    ): Promise<AxiosResponse> {
-        try {
-            const response = await axios.post(this._apiEndpoint, body, {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                timeout: 10 * 1000,
-            });
-
-            if (response.data.errors) throw response.data.errors;
-
-            return response;
-        } catch (error) {
-            console.error(`Retrying left ${retry - 1}... error:`, error);
-            if (retry > 0) {
-                await delay(500);
-                const response = await this.graphqlRequest(body, retry - 1);
-                return response;
-            }
-
-            throw error;
-        }
+      .data.transaction.transactionResult;
     }
 }
 

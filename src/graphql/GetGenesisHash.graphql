@@ -1,7 +1,7 @@
-query GetBlockHash($index: ID!) {
+query GetGenesisHash {
   chainQuery {
     blockQuery {
-      block(hash: $index) {
+      block(index: 0) {
         hash
       }
     }
