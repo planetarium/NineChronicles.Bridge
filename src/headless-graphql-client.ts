@@ -18,9 +18,9 @@ import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
 import { AssetTransferredEvent } from "./types/asset-transferred-event";
 import { BlockHash } from "./types/block-hash";
 import { GarageUnloadEvent } from "./types/garage-unload-event";
+import { Planet } from "./types/registry";
 import { TransactionResult } from "./types/transaction-result";
 import { TxId } from "./types/txid";
-import { Planet } from "./types/registry";
 
 export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     private readonly _client: Client;

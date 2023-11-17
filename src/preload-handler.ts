@@ -1,7 +1,7 @@
 import { Planet, Registry } from "./types/registry";
 
 export class PreloadHandler {
-    private _preloaded: boolean = false;
+    private _preloaded = false;
 
     async preparePlanets(): Promise<Planet[]> {
         try {
@@ -20,12 +20,12 @@ export class PreloadHandler {
             );
 
             if (!upsteamEndpoints || !downstreamEndpoints) {
-                throw Error(`Registry does not have matching planet entry.`);
+                throw Error("Registry does not have matching planet entry.");
             }
             this._preloaded = true;
             return [upsteamEndpoints, downstreamEndpoints];
         } catch (error) {
-            console.error(`FetchRegistry failed.`, error);
+            console.error("PreparePlanets·failed.", error);
         }
     }
 

@@ -12,16 +12,16 @@ import { GarageUnloadMonitor } from "./monitors/garage-unload-monitor";
 import { AssetDownstreamObserver } from "./observers/asset-downstream-observer";
 import { AssetTransferredObserver } from "./observers/asset-transferred-observer";
 import { GarageObserver } from "./observers/garage-observer";
+import { PreloadHandler } from "./preload-handler";
 import { Signer } from "./signer";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 import { Planet } from "./types/registry";
-import { PreloadHandler } from "./preload-handler";
 
 (async () => {
-    const [upsteamPlanet, downstreamPlanet]: Planet[] =
+    const [upstreamPlanet, downstreamPlanet]: Planet[] =
         await new PreloadHandler().preparePlanets();
 
-    const upstreamGQLClient = new HeadlessGraphQLClient(upsteamPlanet, 6);
+    const upstreamGQLClient = new HeadlessGraphQLClient(upstreamPlanet, 6);
     const downstreamGQLClient = new HeadlessGraphQLClient(downstreamPlanet, 6);
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
