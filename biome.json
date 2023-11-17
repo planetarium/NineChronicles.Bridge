@@ -6,5 +6,8 @@
         "indentWidth": 4,
         "lineWidth": 80,
         "ignore": []
+    },
+    "files": {
+        "ignore": ["./src/generated/*.ts"]
     }
 }
