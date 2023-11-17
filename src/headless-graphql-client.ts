@@ -23,7 +23,6 @@ import { TxId } from "./types/txid";
 
 export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     private readonly _client: Client;
-    private readonly _fallbackUrl: URL;
 
     constructor(apiEndpoint: string, maxRetry: number) {
         this._client = new Client({
@@ -42,7 +41,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                         if (error.networkError) {
                             const context = {
                                 ...operation.context,
-                                url: this._fallbackUrl.toString(),
+                                url: apiEndpoint
                             };
                             return { ...operation, context };
                         }
