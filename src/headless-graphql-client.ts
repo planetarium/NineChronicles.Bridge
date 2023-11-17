@@ -1,7 +1,7 @@
 import { Address } from "@planetarium/account";
 import { BencodexDictionary, Dictionary, decode } from "@planetarium/bencodex";
 import { Currency, FungibleAssetValue } from "@planetarium/tx";
-import { Client, cacheExchange, fetchExchange } from "@urql/core";
+import { Client, fetchExchange } from "@urql/core";
 import { retryExchange } from "@urql/exchange-retry";
 import {
     GetAssetTransferredDocument,
@@ -28,7 +28,6 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         this._client = new Client({
             url: apiEndpoint,
             exchanges: [
-                cacheExchange,
                 retryExchange({
                     initialDelayMs: 1000,
                     maxDelayMs: 15000,
