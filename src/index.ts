@@ -19,13 +19,10 @@ import { PreloadHandler } from "./preload-handler";
 
 (async () => {
     const [upsteamPlanet, downstreamPlanet]: Planet[] =
-        await new PreloadHandler().fetchRegistry();
+        await new PreloadHandler().preparePlanets();
 
     const upstreamGQLClient = new HeadlessGraphQLClient(upsteamPlanet, 6);
-    const downstreamGQLClient = new HeadlessGraphQLClient(
-        downstreamPlanet,
-        6,
-    );
+    const downstreamGQLClient = new HeadlessGraphQLClient(downstreamPlanet, 6);
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
             process.env.MONITOR_STATE_STORE_PATH,
