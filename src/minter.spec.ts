@@ -11,7 +11,15 @@ test("mint fav", async () => {
     const signer = new Signer(
         account,
         new HeadlessGraphQLClient(
-            "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+            {
+                id: "0x100000000000",
+                rpcEndpoints: {
+                    "headless.gql": [
+                        "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+                    ],
+                    "headless.grpc": [],
+                },
+            },
             1,
         ),
     );
@@ -44,7 +52,15 @@ test("mint fis", async () => {
     const signer = new Signer(
         account,
         new HeadlessGraphQLClient(
-            "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+            {
+                id: "0x100000000001",
+                rpcEndpoints: {
+                    "headless.gql": [
+                        "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+                    ],
+                    "headless.grpc": [],
+                },
+            },
             1,
         ),
     );
