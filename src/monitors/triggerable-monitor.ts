@@ -13,15 +13,6 @@ function delay(ms: number): Promise<void> {
     });
 }
 
-type ProcessRemainsResult<TEventData> = {
-    nextBlockIndex: number;
-    remainedEvents: RemainedEvent<TEventData>[];
-};
-type RemainedEvent<TEventData> = {
-    blockHash: string;
-    events: (TEventData & TransactionLocation)[];
-};
-
 export abstract class TriggerableMonitor<TEventData> extends Monitor<
     TEventData & TransactionLocation
 > {
@@ -94,10 +85,6 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
             }
         }
     }
-
-    protected abstract processRemains(
-        transactionLocation: TransactionLocation,
-    ): Promise<ProcessRemainsResult<TEventData>>;
 
     private debug(message?: unknown, ...optionalParams: unknown[]): void {
         console.debug(`[${this.constructor.name}]`, message, ...optionalParams);
