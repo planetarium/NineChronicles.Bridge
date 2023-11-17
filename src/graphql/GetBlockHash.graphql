@@ -1,0 +1,9 @@
+query GetBlockHash($index: ID!) {
+  chainQuery {
+    blockQuery {
+      block(hash: $index) {
+        hash
+      }
+    }
+  }
+}

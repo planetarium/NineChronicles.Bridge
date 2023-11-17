@@ -1,13 +1,19 @@
 import { Address } from "@planetarium/account";
-import {
-    BencodexDictionary,
-    Dictionary,
-    Value,
-    decode,
-    encode,
-} from "@planetarium/bencodex";
+import { BencodexDictionary, Dictionary, decode } from "@planetarium/bencodex";
 import { Currency, FungibleAssetValue } from "@planetarium/tx";
-import axios, { AxiosResponse } from "axios";
+import { Client, cacheExchange, fetchExchange } from "@urql/core";
+import { retryExchange } from "@urql/exchange-retry";
+import {
+    GetAssetTransferredDocument,
+    GetBlockHashDocument,
+    GetBlockIndexDocument,
+    GetGarageUnloadsDocument,
+    GetGenesisHashDocument,
+    GetNextTxNonceDocument,
+    GetTipIndexDocument,
+    GetTransactionResultDocument,
+    StageTransactionDocument,
+} from "./generated/graphql";
 import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
 import { AssetTransferredEvent } from "./types/asset-transferred-event";
 import { BlockHash } from "./types/block-hash";
@@ -15,27 +21,35 @@ import { GarageUnloadEvent } from "./types/garage-unload-event";
 import { TransactionResult } from "./types/transaction-result";
 import { TxId } from "./types/txid";
 
-function delay(ms: number): Promise<void> {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve();
-        }, ms);
-    });
-}
-
-interface GraphQLRequestBody {
-    operationName: string | null;
-    query: string;
-    variables: Record<string, unknown>;
-}
-
 export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
-    private readonly _apiEndpoint: string;
-    private readonly _maxRetry: number;
+    private readonly _client: Client;
 
     constructor(apiEndpoint: string, maxRetry: number) {
-        this._apiEndpoint = apiEndpoint;
-        this._maxRetry = maxRetry;
+        this._client = new Client({
+            url: apiEndpoint,
+            exchanges: [
+                cacheExchange,
+                retryExchange({
+                    initialDelayMs: 1000,
+                    maxDelayMs: 15000,
+                    randomDelay: true,
+                    maxNumberAttempts: maxRetry,
+                    retryWith: (error, operation) => {
+                        console.error(error.message);
+                        // https://formidable.com/open-source/urql/docs/basics/errors/
+                        // This automatically distinguish, log, process Network / GQL error.
+                        if (error.networkError) {
+                            const context = {
+                                ...operation.context,
+                                url: apiEndpoint
+                            };
+                            return { ...operation, context };
+                        }
+                    },
+                }),
+                fetchExchange,
+            ],
+        });
     }
 
     async getGarageUnloadEvents(
@@ -43,25 +57,11 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         agentAddress: Address,
         avatarAddress: Address,
     ): Promise<GarageUnloadEvent[]> {
-        const query = `query GetGarageUnloads($startingBlockIndex: Long!){
-            transaction {
-              ncTransactions(startingBlockIndex: $startingBlockIndex, actionType: "unload_from_my_garages*" limit: 1){
-                id
-                actions {
-                  raw
-                }
-              }
-            }
-          }`;
-        const { data } = await this.graphqlRequest({
-            query,
-            operationName: "GetGarageUnloads",
-            variables: {
-                startingBlockIndex: blockIndex,
-            },
+        const { data } = await this._client.query(GetGarageUnloadsDocument, {
+            startingBlockIndex: blockIndex,
         });
 
-        return data.data.transaction.ncTransactions
+        return data.transaction.ncTransactions
             .map((tx) => {
                 const action = decode(
                     Buffer.from(tx.actions[0].raw, "hex"),
@@ -101,71 +101,31 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
             .filter((ev) => ev !== null);
     }
 
-    get endpoint(): string {
-        return this._apiEndpoint;
-    }
-
     async getBlockIndex(blockHash: BlockHash): Promise<number> {
-        const query = `query GetBlockHash($hash: ID!)
-        { chainQuery { blockQuery { block(hash: $hash) { index } } } }`;
-        const { data } = await this.graphqlRequest({
-            operationName: "GetBlockHash",
-            query,
-            variables: {
-                hash: blockHash,
-            },
-        });
-
-        return data.data.chainQuery.blockQuery.block.index;
+        return (
+            await this._client.query(GetBlockIndexDocument, { hash: blockHash })
+        ).data.chainQuery.blockQuery.block.index;
     }
 
     async getTipIndex(): Promise<number> {
-        const query = `query
-        { chainQuery { blockQuery { blocks(desc: true, limit: 1) { index } } } }`;
-        const { data } = await this.graphqlRequest({
-            operationName: null,
-            query,
-            variables: {},
-        });
-
-        return data.data.chainQuery.blockQuery.blocks[0].index;
+        return (await this._client.query(GetTipIndexDocument, {})).data
+            .nodeStatus.tip.index;
     }
 
     async getBlockHash(index: number): Promise<BlockHash> {
-        const query = `query GetBlockHash($index: ID!)
-        { chainQuery { blockQuery { block(index: $index) { hash } } } }`;
-        const { data } = await this.graphqlRequest({
-            operationName: "GetBlockHash",
-            query,
-            variables: {
+        return (
+            await this._client.query(GetBlockHashDocument, {
                 index,
-            },
-        });
-
-        return data.data.chainQuery.blockQuery.block.hash;
+            })
+        ).data.chainQuery.blockQuery.block.hash;
     }
 
     async getAssetTransferredEvents(
         blockIndex: number,
         recipient: Address,
     ): Promise<AssetTransferredEvent[]> {
-        const query = `query GetAssetTransferred($blockIndex: Long!)
-            {             
-                transaction {
-                    ncTransactions(startingBlockIndex: $blockIndex, actionType: "^transfer_asset[0-9]*$", limit: 1) {
-                        id
-                        actions {
-                            raw
-                        }
-                    }
-                }
-            }`;
-        const { data } = await this.graphqlRequest({
-            operationName: "GetAssetTransferred",
-            query,
-            variables: {
-                blockIndex,
-            },
+        const data = await this._client.query(GetAssetTransferredDocument, {
+            blockIndex,
         });
 
         return data.data.transaction.ncTransactions
@@ -207,78 +167,26 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     }
 
     async getNextTxNonce(address: string): Promise<number> {
-        const query =
-            "query GetNextTxNonce($address: Address!) { nextTxNonce(address: $address) } ";
-        const response = await this.graphqlRequest({
-            operationName: "GetNextTxNonce",
-            query,
-            variables: { address },
-        });
-
-        return response.data.data.nextTxNonce;
+        return (await this._client.query(GetNextTxNonceDocument, { address }))
+            .data.nextTxNonce;
     }
 
     async getGenesisHash(): Promise<string> {
-        const query =
-            "query GetGenesisHash { chainQuery { blockQuery { block(index: 0) { hash } } } }";
-        const response = await this.graphqlRequest({
-            operationName: "GetGenesisHash",
-            query,
-            variables: {},
-        });
-
-        return response.data.data.chainQuery.blockQuery.block.hash;
+        // substitute with registry? this takes 4 seconds.
+        return (await this._client.query(GetGenesisHashDocument, {})).data
+            .chainQuery.blockQuery.block.hash;
     }
 
     async stageTransaction(payload: string): Promise<string> {
-        const query =
-            "mutation StageTransaction($payload: String!) { stageTransaction(payload: $payload) }";
-        const response = await this.graphqlRequest({
-            operationName: "StageTransaction",
-            query,
-            variables: { payload },
-        });
-
-        return response.data.data.stageTransaction;
+        return (
+            await this._client.mutation(StageTransactionDocument, { payload })
+        ).data.stageTransaction;
     }
 
     async getTransactionResult(txId: TxId): Promise<TransactionResult> {
-        const query =
-            "query GetTransactionResult($txId: TxId!) { transaction { transactionResult(txId: $txId) { txStatus } } }";
-        const response = await this.graphqlRequest({
-            operationName: "GetTransactionResult",
-            query,
-            variables: { txId },
-        });
-
-        return response.data.data.transaction.transactionResult;
-    }
-
-    private async graphqlRequest(
-        body: GraphQLRequestBody,
-        retry: number = this._maxRetry,
-    ): Promise<AxiosResponse> {
-        try {
-            const response = await axios.post(this._apiEndpoint, body, {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                timeout: 10 * 1000,
-            });
-
-            if (response.data.errors) throw response.data.errors;
-
-            return response;
-        } catch (error) {
-            console.error(`Retrying left ${retry - 1}... error:`, error);
-            if (retry > 0) {
-                await delay(500);
-                const response = await this.graphqlRequest(body, retry - 1);
-                return response;
-            }
-
-            throw error;
-        }
+        return (
+            await this._client.query(GetTransactionResultDocument, { txId })
+        ).data.transaction.transactionResult;
     }
 }
 

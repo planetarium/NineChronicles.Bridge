@@ -1,0 +1,9 @@
+query GetGenesisHash {
+  chainQuery {
+    blockQuery {
+      block(index: 0) {
+        hash
+      }
+    }
+  }
+}
