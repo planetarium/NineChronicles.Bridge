@@ -3,7 +3,6 @@ import { Monitor } from ".";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
 import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { BlockHash } from "../types/block-hash";
-import { ShutdownChecker } from "../types/shutdown-checker";
 import { TransactionLocation } from "../types/transaction-location";
 
 function delay(ms: number): Promise<void> {
@@ -18,7 +17,6 @@ export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
     TEventData & TransactionLocation
 > {
     private readonly _monitorStateHandler: IMonitorStateHandler;
-    private readonly _shutdownChecker: ShutdownChecker;
     private readonly _delayMilliseconds: number;
 
     protected readonly _headlessGraphQLClient: IHeadlessGraphQLClient;
@@ -27,14 +25,12 @@ export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
 
     constructor(
         monitorStateHandler: IMonitorStateHandler,
-        shutdownChecker: ShutdownChecker,
         headlessGraphQLClient: IHeadlessGraphQLClient,
         delayMilliseconds: number = 15 * 1000,
     ) {
         super();
 
         this._monitorStateHandler = monitorStateHandler;
-        this._shutdownChecker = shutdownChecker;
         this._headlessGraphQLClient = headlessGraphQLClient;
         this._delayMilliseconds = delayMilliseconds;
     }
@@ -52,10 +48,10 @@ export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
             this.latestBlockNumber = await this.getTipIndex();
         }
 
-        while (!this._shutdownChecker.isShutdown()) {
+        while (this.isRunnning()) {
             console.log(
-                "shutdownChecker.isShutdown",
-                this._shutdownChecker.isShutdown(),
+                `${this.constructor.name}.isRunning()`,
+                this.isRunnning(),
             );
             try {
                 const tipIndex = await this.getTipIndex();

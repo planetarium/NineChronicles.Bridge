@@ -12,7 +12,6 @@ import { GarageUnloadMonitor } from "./monitors/garage-unload-monitor";
 import { AssetDownstreamObserver } from "./observers/asset-downstream-observer";
 import { AssetTransferredObserver } from "./observers/asset-transferred-observer";
 import { GarageObserver } from "./observers/garage-observer";
-import { ShutdownHandler } from "./shutdown-handler";
 import { Signer } from "./signer";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 
@@ -30,15 +29,12 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
             process.env.MONITOR_STATE_STORE_PATH,
         );
 
-    const shutdownHandler = new ShutdownHandler();
-
     const upstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
             getMonitorStateHandler(
                 monitorStateStore,
                 "upstreamAssetTransferMonitor",
             ),
-            shutdownHandler,
             upstreamGQLClient,
             Address.fromHex(process.env.NC_VAULT_ADDRESS),
         );
@@ -48,7 +44,6 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
                 monitorStateStore,
                 "downstreamAssetTransferMonitor",
             ),
-            shutdownHandler,
             downstreamGQLClient,
             Address.fromHex(process.env.NC_VAULT_ADDRESS),
         );
@@ -57,7 +52,6 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
             monitorStateStore,
             "upstreamGarageUnloadMonitor",
         ),
-        shutdownHandler,
         upstreamGQLClient,
         Address.fromHex(process.env.NC_VAULT_ADDRESS),
         Address.fromHex(process.env.NC_VAULT_AVATAR_ADDRESS),
@@ -86,7 +80,6 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 
     const handleSignal = () => {
         console.log("Handle signal.");
-        shutdownHandler.shutdown();
 
         upstreamAssetsTransferredMonitorMonitor.stop();
         downstreamAssetsTransferredMonitorMonitor.stop();
