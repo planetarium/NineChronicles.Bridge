@@ -41,7 +41,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                         if (error.networkError) {
                             const context = {
                                 ...operation.context,
-                                url: apiEndpoint
+                                url: apiEndpoint,
                             };
                             return { ...operation, context };
                         }
