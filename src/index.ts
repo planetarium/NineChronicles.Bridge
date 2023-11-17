@@ -31,8 +31,6 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
         );
 
     const shutdownHandler = new ShutdownHandler();
-    process.on("SIGTERM", () => shutdownHandler.shutdown());
-    process.on("SIGINT", () => shutdownHandler.shutdown());
 
     const upstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
@@ -85,6 +83,17 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
     );
 
     garageMonitor.attach(new GarageObserver(minter));
+
+    const handleSignal = () => {
+        console.log("Handle signal.");
+        shutdownHandler.shutdown();
+
+        upstreamAssetsTransferredMonitorMonitor.stop();
+        downstreamAssetsTransferredMonitorMonitor.stop();
+        garageMonitor.stop();
+    };
+    process.on("SIGTERM", handleSignal);
+    process.on("SIGINT", handleSignal);
 
     upstreamAssetsTransferredMonitorMonitor.run();
     downstreamAssetsTransferredMonitorMonitor.run();
