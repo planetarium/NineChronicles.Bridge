@@ -1,6 +1,6 @@
 import { captureException } from "@sentry/node";
 import { Monitor } from ".";
-import { IMonitorStateStore } from "../interfaces/monitor-state-store";
+import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { BlockHash } from "../types/block-hash";
 import { ShutdownChecker } from "../types/shutdown-checker";
 import { TransactionLocation } from "../types/transaction-location";
@@ -27,18 +27,18 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
 > {
     private latestBlockNumber: number | undefined;
 
-    private readonly _monitorStateStore: IMonitorStateStore;
+    private readonly _monitorStateHandler: IMonitorStateHandler;
     private readonly _shutdownChecker: ShutdownChecker;
     private readonly _delayMilliseconds: number;
 
     constructor(
-        monitorStateStore: IMonitorStateStore,
+        monitorStateHandler: IMonitorStateHandler,
         shutdownChecker: ShutdownChecker,
         delayMilliseconds: number = 15 * 1000,
     ) {
         super();
 
-        this._monitorStateStore = monitorStateStore;
+        this._monitorStateHandler = monitorStateHandler;
         this._shutdownChecker = shutdownChecker;
         this._delayMilliseconds = delayMilliseconds;
     }
@@ -47,8 +47,7 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
         blockHash: BlockHash;
         events: (TEventData & TransactionLocation)[];
     }> {
-        const nullableLatestBlockHash =
-            await this._monitorStateStore.load("nineChronicles"); // FIXME
+        const nullableLatestBlockHash = await this._monitorStateHandler.load();
         if (nullableLatestBlockHash !== null) {
             this.latestBlockNumber = await this.getBlockIndex(
                 nullableLatestBlockHash,
@@ -82,10 +81,7 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
                             events: await this.getEvents(blockIndex),
                         };
 
-                        await this._monitorStateStore.store(
-                            "nineChronicles",
-                            blockHash,
-                        );
+                        await this._monitorStateHandler.store(blockHash);
                     }
 
                     this.latestBlockNumber += 1;

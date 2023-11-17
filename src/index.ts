@@ -5,6 +5,7 @@ import { AssetTransfer } from "./asset-transfer";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
 import { IMonitorStateStore } from "./interfaces/monitor-state-store";
 import { Minter } from "./minter";
+import { getMonitorStateHandler } from "./monitor-state-handler";
 import { AssetsTransferredMonitor } from "./monitors/assets-transferred-monitor";
 import { GarageUnloadMonitor } from "./monitors/garage-unload-monitor";
 import { AssetDownstreamObserver } from "./observers/asset-downstream-observer";
@@ -34,20 +35,29 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 
     const upstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
-            monitorStateStore,
+            getMonitorStateHandler(
+                monitorStateStore,
+                "upstreamAssetTransferMonitor",
+            ),
             shutdownHandler,
             upstreamGQLClient,
             Address.fromHex(process.env.NC_VAULT_ADDRESS),
         );
     const downstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
-            monitorStateStore,
+            getMonitorStateHandler(
+                monitorStateStore,
+                "downstreamAssetTransferMonitor",
+            ),
             shutdownHandler,
             downstreamGQLClient,
             Address.fromHex(process.env.NC_VAULT_ADDRESS),
         );
     const garageMonitor = new GarageUnloadMonitor(
-        monitorStateStore,
+        getMonitorStateHandler(
+            monitorStateStore,
+            "upstreamGarageUnloadMonitor",
+        ),
         shutdownHandler,
         upstreamGQLClient,
         Address.fromHex(process.env.NC_VAULT_ADDRESS),

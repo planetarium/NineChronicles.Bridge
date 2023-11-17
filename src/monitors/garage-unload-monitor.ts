@@ -1,6 +1,6 @@
 import { Address } from "@planetarium/account";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
-import { IMonitorStateStore } from "../interfaces/monitor-state-store";
+import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
 import { ShutdownChecker } from "../types/shutdown-checker";
 import { TransactionLocation } from "../types/transaction-location";
@@ -11,13 +11,13 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
     private readonly _avatarAddress: Address;
 
     constructor(
-        monitorStateStore: IMonitorStateStore,
+        monitorStateHandler: IMonitorStateHandler,
         shutdownChecker: ShutdownChecker,
         headlessGraphQLClient: IHeadlessGraphQLClient,
         agentAddress: Address,
         avatarAddress: Address,
     ) {
-        super(monitorStateStore, shutdownChecker, headlessGraphQLClient);
+        super(monitorStateHandler, shutdownChecker, headlessGraphQLClient);
         this._agentAddress = agentAddress;
         this._avatarAddress = avatarAddress;
     }
