@@ -2,7 +2,7 @@
   "name": "araya",
   "version": "1.0.0",
   "scripts": {
-    "compile": "tsc",
+    "compile": "graphql-codegen; tsc",
     "start": "npx tsx ./src/index.ts",
     "codegen": "graphql-codegen"
   },
