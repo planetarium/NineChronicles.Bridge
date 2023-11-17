@@ -26,7 +26,7 @@ test(".getGarageUnloadEvents()", async () => {
     const account = RawPrivateKey.fromHex("");
     const signer = new Signer(account, heimdallClient);
     const minter = new Minter(signer);
-    const observer = new GarageObserver(monitorStateStore, minter);
+    const observer = new GarageObserver(minter);
     await observer.notify({
         blockHash: "",
         events: x.map((ev) => {
@@ -47,7 +47,7 @@ test("getAssetTransferredEvents()", async () => {
     const signer = new Signer(account, heimdallClient);
     const minter = new Minter(signer);
     const stateStore = await Sqlite3MonitorStateStore.open("test");
-    const observer = new AssetTransferredObserver(stateStore, minter);
+    const observer = new AssetTransferredObserver(minter);
     await observer.notify({
         blockHash: "",
         events: evs.map((ev) => {

@@ -1,5 +1,6 @@
 import { Address } from "@planetarium/account";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
+import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { ShutdownChecker } from "../types/shutdown-checker";
 import { TransactionLocation } from "../types/transaction-location";
@@ -9,16 +10,12 @@ export class AssetsTransferredMonitor extends NineChroniclesMonitor<AssetTransfe
     private readonly _address: Address;
 
     constructor(
-        latestTransactionLocation: TransactionLocation | null,
+        monitorStateHandler: IMonitorStateHandler,
         shutdownChecker: ShutdownChecker,
         headlessGraphQLClient: IHeadlessGraphQLClient,
         address: Address,
     ) {
-        super(
-            latestTransactionLocation,
-            shutdownChecker,
-            headlessGraphQLClient,
-        );
+        super(monitorStateHandler, shutdownChecker, headlessGraphQLClient);
         this._address = address;
     }
 

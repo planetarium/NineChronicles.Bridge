@@ -1,9 +1,6 @@
-import { TransactionLocation } from "../types/transaction-location";
+import { BlockHash } from "../types/block-hash";
 
 export interface IMonitorStateStore {
-    store(
-        network: string,
-        transactionLocation: TransactionLocation,
-    ): Promise<void>;
-    load(network: string): Promise<TransactionLocation | null>;
+    store(network: string, blockHash: BlockHash): Promise<void>;
+    load(network: string): Promise<BlockHash | null>;
 }

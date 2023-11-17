@@ -1,7 +1,7 @@
 import { promisify } from "util";
 import { Database } from "sqlite3";
 import { IMonitorStateStore } from "./interfaces/monitor-state-store";
-import { TransactionLocation } from "./types/transaction-location";
+import { BlockHash } from "./types/block-hash";
 
 export class Sqlite3MonitorStateStore implements IMonitorStateStore {
     private readonly _database: Database;
@@ -21,8 +21,7 @@ export class Sqlite3MonitorStateStore implements IMonitorStateStore {
     private static async initialize(database: Database): Promise<void> {
         const CREATE_TABLE_QUERY = `CREATE TABLE IF NOT EXISTS monitor_states (
             network TEXT PRIMARY KEY,
-            block_hash TEXT NOT NULL,
-            tx_id TEXT
+            block_hash TEXT NOT NULL
         )`;
         return new Promise((resolve, error) => {
             database.run(CREATE_TABLE_QUERY, (e) => {
@@ -35,29 +34,27 @@ export class Sqlite3MonitorStateStore implements IMonitorStateStore {
         });
     }
 
-    store(
-        network: string,
-        transactionLocation: TransactionLocation,
-    ): Promise<void> {
+    store(network: string, blockHash: BlockHash): Promise<void> {
         this.checkClosed();
 
         const run: (sql: string, params: unknown[]) => Promise<void> =
             promisify(this._database.run.bind(this._database));
         return run(
-            "INSERT OR REPLACE INTO monitor_states(network, block_hash, tx_id) VALUES (?, ?, ?)",
-            [network, transactionLocation.blockHash, transactionLocation.txId],
+            "INSERT OR REPLACE INTO monitor_states(network, block_hash) VALUES (?, ?)",
+            [network, blockHash],
         );
     }
 
-    async load(network: string): Promise<TransactionLocation | null> {
+    async load(network: string): Promise<BlockHash | null> {
         this.checkClosed();
         const get: (
             sql: string,
             params: unknown[],
-        ) => Promise<{ block_hash: string; tx_id: string } | undefined> =
-            promisify(this._database.get.bind(this._database));
+        ) => Promise<{ block_hash: string } | undefined> = promisify(
+            this._database.get.bind(this._database),
+        );
         const row = await get(
-            "SELECT block_hash, tx_id FROM monitor_states WHERE network = ?",
+            "SELECT block_hash FROM monitor_states WHERE network = ?",
             [network],
         );
 
@@ -65,7 +62,7 @@ export class Sqlite3MonitorStateStore implements IMonitorStateStore {
             return null;
         }
 
-        return { blockHash: row.block_hash, txId: row.tx_id };
+        return row.block_hash;
     }
 
     close(): void {

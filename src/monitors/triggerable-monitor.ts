@@ -1,5 +1,6 @@
 import { captureException } from "@sentry/node";
 import { Monitor } from ".";
+import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { BlockHash } from "../types/block-hash";
 import { ShutdownChecker } from "../types/shutdown-checker";
 import { TransactionLocation } from "../types/transaction-location";
@@ -26,18 +27,18 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
 > {
     private latestBlockNumber: number | undefined;
 
-    private readonly _latestTransactionLocation: TransactionLocation | null;
+    private readonly _monitorStateHandler: IMonitorStateHandler;
     private readonly _shutdownChecker: ShutdownChecker;
     private readonly _delayMilliseconds: number;
 
     constructor(
-        latestTransactionLocation: TransactionLocation | null,
+        monitorStateHandler: IMonitorStateHandler,
         shutdownChecker: ShutdownChecker,
         delayMilliseconds: number = 15 * 1000,
     ) {
         super();
 
-        this._latestTransactionLocation = latestTransactionLocation;
+        this._monitorStateHandler = monitorStateHandler;
         this._shutdownChecker = shutdownChecker;
         this._delayMilliseconds = delayMilliseconds;
     }
@@ -46,15 +47,11 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
         blockHash: BlockHash;
         events: (TEventData & TransactionLocation)[];
     }> {
-        if (this._latestTransactionLocation !== null) {
-            const { nextBlockIndex, remainedEvents } =
-                await this.processRemains(this._latestTransactionLocation);
-
-            for (const remainedEvent of remainedEvents) {
-                yield remainedEvent;
-            }
-
-            this.latestBlockNumber = nextBlockIndex;
+        const nullableLatestBlockHash = await this._monitorStateHandler.load();
+        if (nullableLatestBlockHash !== null) {
+            this.latestBlockNumber = await this.getBlockIndex(
+                nullableLatestBlockHash,
+            );
         } else {
             this.latestBlockNumber = await this.getTipIndex();
         }
@@ -83,6 +80,8 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
                             blockHash,
                             events: await this.getEvents(blockIndex),
                         };
+
+                        await this._monitorStateHandler.store(blockHash);
                     }
 
                     this.latestBlockNumber += 1;
