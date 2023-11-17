@@ -7,7 +7,8 @@ import {
     encode,
 } from "@planetarium/bencodex";
 import { Currency, FungibleAssetValue } from "@planetarium/tx";
-import axios, { AxiosResponse } from "axios";
+import { gql, Client, cacheExchange, fetchExchange, subscriptionExchange } from "urql";
+import { retryExchange } from '@urql/exchange-retry';
 import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
 import { AssetTransferredEvent } from "./types/asset-transferred-event";
 import { BlockHash } from "./types/block-hash";
@@ -30,12 +31,30 @@ interface GraphQLRequestBody {
 }
 
 export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
-    private readonly _apiEndpoint: string;
-    private readonly _maxRetry: number;
+    private readonly _client: Client;
+    private readonly _fallbackUrl: URL
 
     constructor(apiEndpoint: string, maxRetry: number) {
-        this._apiEndpoint = apiEndpoint;
-        this._maxRetry = maxRetry;
+        this._client = new Client({
+            url: apiEndpoint,
+            exchanges: [
+                cacheExchange,
+                retryExchange({
+                    initialDelayMs: 1000,
+                    maxDelayMs: 15000,
+                    randomDelay: true,
+                    maxNumberAttempts: maxRetry,
+                    retryWith: (error, operation) => {
+                        console.error(error.message);
+                        if (error.networkError) {
+                            const context = { ...operation.context, url: this._fallbackUrl.toString() };
+                            return { ...operation, context };
+                          }
+                    }
+                }),
+                fetchExchange,
+            ]
+        })
     }
 
     async getGarageUnloadEvents(
@@ -43,7 +62,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         agentAddress: Address,
         avatarAddress: Address,
     ): Promise<GarageUnloadEvent[]> {
-        const query = `query GetGarageUnloads($startingBlockIndex: Long!){
+        const query = gql`query GetGarageUnloads($startingBlockIndex: Long!){
             transaction {
               ncTransactions(startingBlockIndex: $startingBlockIndex, actionType: "unload_from_my_garages*" limit: 1){
                 id
