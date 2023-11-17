@@ -63,19 +63,6 @@ export abstract class NineChroniclesMonitor<
         };
     }
 
-    protected triggerredBlocks(blockIndex: number): number[] {
-        if (blockIndex !== 0 && blockIndex % AUTHORIZED_BLOCK_INTERVAL === 0) {
-            const blockIndexes = Array(AUTHORIZED_BLOCK_INTERVAL);
-            for (let i = 0; i < AUTHORIZED_BLOCK_INTERVAL; ++i) {
-                blockIndexes[i] =
-                    blockIndex - AUTHORIZED_BLOCK_INTERVAL + 1 + i;
-            }
-            return blockIndexes;
-        }
-
-        return [];
-    }
-
     protected getBlockIndex(blockHash: string) {
         return this._headlessGraphQLClient.getBlockIndex(blockHash);
     }

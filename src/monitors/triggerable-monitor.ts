@@ -63,31 +63,24 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
             );
             try {
                 const tipIndex = await this.getTipIndex();
-                this.debug(
-                    "Try to check trigger at",
-                    this.latestBlockNumber + 1,
-                );
+                this.debug("Try to execute at", this.latestBlockNumber + 1);
                 if (this.latestBlockNumber + 1 <= tipIndex) {
-                    const trigerredBlockIndexes = this.triggerredBlocks(
-                        this.latestBlockNumber + 1,
-                    );
+                    const blockIndex = this.latestBlockNumber;
 
-                    for (const blockIndex of trigerredBlockIndexes) {
-                        this.debug("Execute triggerred block #", blockIndex);
-                        const blockHash = await this.getBlockHash(blockIndex);
+                    this.debug("Execute block #", blockIndex);
+                    const blockHash = await this.getBlockHash(blockIndex);
 
-                        yield {
-                            blockHash,
-                            events: await this.getEvents(blockIndex),
-                        };
+                    yield {
+                        blockHash,
+                        events: await this.getEvents(blockIndex),
+                    };
 
-                        await this._monitorStateHandler.store(blockHash);
-                    }
+                    await this._monitorStateHandler.store(blockHash);
 
                     this.latestBlockNumber += 1;
                 } else {
                     this.debug(
-                        `Skip check trigger current: ${this.latestBlockNumber} / tip: ${tipIndex}`,
+                        `Skip. lastestBlockNumber: ${this.latestBlockNumber} / tip: ${tipIndex}`,
                     );
 
                     await delay(this._delayMilliseconds);
@@ -105,8 +98,6 @@ export abstract class TriggerableMonitor<TEventData> extends Monitor<
     protected abstract processRemains(
         transactionLocation: TransactionLocation,
     ): Promise<ProcessRemainsResult<TEventData>>;
-
-    protected abstract triggerredBlocks(blockIndex: number): number[];
 
     private debug(message?: unknown, ...optionalParams: unknown[]): void {
         console.debug(`[${this.constructor.name}]`, message, ...optionalParams);
