@@ -14,15 +14,17 @@ import { AssetTransferredObserver } from "./observers/asset-transferred-observer
 import { GarageObserver } from "./observers/garage-observer";
 import { Signer } from "./signer";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
+import { Planet } from "./types/registry";
+import { PreloadHandler } from "./preload-handler";
 
 (async () => {
-    const upstreamGQLClient = new HeadlessGraphQLClient(
-        process.env.NC_UPSTREAM_GQL_ENDPOINT,
-        3,
-    );
+    const [upsteamPlanet, downstreamPlanet]: Planet[] =
+        await new PreloadHandler().fetchRegistry();
+
+    const upstreamGQLClient = new HeadlessGraphQLClient(upsteamPlanet, 6);
     const downstreamGQLClient = new HeadlessGraphQLClient(
-        process.env.NC_DOWNSTREAM_GQL_ENDPOINT,
-        3,
+        downstreamPlanet,
+        6,
     );
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
