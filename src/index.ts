@@ -18,6 +18,7 @@ import { PreloadHandler } from "./preload-handler";
 import { Signer } from "./signer";
 import { SlackBot } from "./slack/bot";
 import { SlackChannel } from "./slack/channel";
+import { AppStartEvent } from "./slack/messages/app-start-event";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 import { Planet } from "./types/registry";
 
@@ -84,6 +85,13 @@ import { Planet } from "./types/registry";
         new SlackChannel(
             getRequiredEnv("SLACK__CHANNEL"),
             new WebClient(getRequiredEnv("SLACK__BOT_TOKEN")),
+        ),
+    );
+
+    await slackBot.sendMessage(
+        new AppStartEvent(
+            await upstreamAccount.getAddress(),
+            await downstreamAccount.getAddress(),
         ),
     );
 
