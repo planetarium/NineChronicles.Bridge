@@ -1,8 +1,10 @@
 import { Address, RawPrivateKey } from "@planetarium/account";
+import { WebClient } from "@slack/web-api";
 import "dotenv/config";
 import { getAccountFromEnv } from "./accounts";
 import { AssetBurner } from "./asset-burner";
 import { AssetTransfer } from "./asset-transfer";
+import { getRequiredEnv } from "./env";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
 import { IMonitorStateStore } from "./interfaces/monitor-state-store";
 import { Minter } from "./minter";
@@ -14,6 +16,8 @@ import { AssetTransferredObserver } from "./observers/asset-transferred-observer
 import { GarageObserver } from "./observers/garage-observer";
 import { PreloadHandler } from "./preload-handler";
 import { Signer } from "./signer";
+import { SlackBot } from "./slack/bot";
+import { SlackChannel } from "./slack/channel";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 import { Planet } from "./types/registry";
 
@@ -73,6 +77,14 @@ import { Planet } from "./types/registry";
 
     downstreamAssetsTransferredMonitorMonitor.attach(
         new AssetDownstreamObserver(upstreamTransfer, downstreamBurner),
+    );
+
+    const slackBot = new SlackBot(
+        getRequiredEnv("SLACK__BOT_USERNAME"),
+        new SlackChannel(
+            getRequiredEnv("SLACK__CHANNEL"),
+            new WebClient(getRequiredEnv("SLACK__BOT_TOKEN")),
+        ),
     );
 
     garageMonitor.attach(new GarageObserver(minter));
