@@ -1,21 +1,9 @@
 import { Account, PublicKey, RawPrivateKey } from "@planetarium/account";
 import { AwsKmsAccount, KMSClient } from "@planetarium/account-aws-kms";
+import { getRequiredEnv } from "../env";
 
 type AllowedEnvPrefix = "NC_UPSTREAM" | "NC_DOWNSTREAM";
 type AccountType = "RAW" | "KMS";
-
-function getEnv(key: string): string | undefined {
-    return process.env[key];
-}
-
-function getRequiredEnv(key: string): string {
-    const env = getEnv(key);
-    if (env === undefined) {
-        throw new Error(`${key} envrionment variable doesn't exist.`);
-    }
-
-    return env;
-}
 
 function getAccountTypeFromEnv(prefix: AllowedEnvPrefix): AccountType {
     const envKey = `${prefix}_ACCOUNT_TYPE` as const;
