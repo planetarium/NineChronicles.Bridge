@@ -6,10 +6,12 @@ export class PreloadHandler {
 
     async preparePlanets(): Promise<Planet[]> {
         try {
-            const RegistryBaseUrl = new URL(getRequiredEnv("NC_REGISTRY_ENDPOINT"));
-            const registry: Registry = JSON.parse(
-                await (await fetch(RegistryBaseUrl)).json(),
+            const RegistryBaseUrl = new URL(
+                getRequiredEnv("NC_REGISTRY_ENDPOINT"),
             );
+            const registry: Registry = await (
+                await fetch(RegistryBaseUrl)
+            ).json();
             if (registry === undefined)
                 throw Error("Failed to parse registry.");
 
