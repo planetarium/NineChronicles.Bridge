@@ -37,17 +37,6 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         this._client = new Client({
             url: endpoint,
             exchanges: [
-                mapExchange({
-                    onOperation(operation) {
-                        
-                    },
-                    onResult(result) {
-                        
-                    },
-                    onError(error, operation) {
-                        
-                    },
-                })
                 retryExchange({
                     initialDelayMs: 1000,
                     maxDelayMs: 10000,
@@ -74,6 +63,10 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         console.log(
             `GQL client initialization complete - ${this._planet.id} - ${endpoint}`,
         );
+    }
+
+    public getPlanetID(): string {
+        return this._planet.id;
     }
 
     private getEndpoint(): string {
