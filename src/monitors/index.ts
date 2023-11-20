@@ -3,6 +3,7 @@ import { BlockHash } from "../types/block-hash";
 
 type IMonitorObserver<TEvent> = IObserver<{
     blockHash: BlockHash;
+    planetID: string;
     events: TEvent[];
 }>;
 
@@ -31,6 +32,7 @@ export abstract class Monitor<TEvent> {
 
     abstract loop(): AsyncIterableIterator<{
         blockHash: string;
+        planetID: string;
         events: TEvent[];
     }>;
 

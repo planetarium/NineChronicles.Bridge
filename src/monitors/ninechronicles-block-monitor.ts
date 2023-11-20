@@ -18,6 +18,7 @@ export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
 > {
     private readonly _monitorStateHandler: IMonitorStateHandler;
     private readonly _delayMilliseconds: number;
+    private readonly _planetID: string;
 
     protected readonly _headlessGraphQLClient: IHeadlessGraphQLClient;
 
@@ -33,13 +34,16 @@ export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
         this._monitorStateHandler = monitorStateHandler;
         this._headlessGraphQLClient = headlessGraphQLClient;
         this._delayMilliseconds = delayMilliseconds;
+        this._planetID = this._headlessGraphQLClient.getPlanetID();
     }
 
     async *loop(): AsyncIterableIterator<{
         blockHash: BlockHash;
+        planetID: string;
         events: (TEventData & TransactionLocation)[];
     }> {
         const nullableLatestBlockHash = await this._monitorStateHandler.load();
+        const planetID = this._planetID;
         if (nullableLatestBlockHash !== null) {
             this.latestBlockNumber = await this.getBlockIndex(
                 nullableLatestBlockHash,
@@ -64,6 +68,7 @@ export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
 
                     yield {
                         blockHash,
+                        planetID,
                         events: await this.getEvents(blockIndex),
                     };
 

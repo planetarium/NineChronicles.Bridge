@@ -8,6 +8,7 @@ import { NineChroniclesMonitor } from "./ninechronicles-block-monitor";
 export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent> {
     private readonly _agentAddress: Address;
     private readonly _avatarAddress: Address;
+    private readonly _planetID: string;
 
     constructor(
         monitorStateHandler: IMonitorStateHandler,
@@ -18,11 +19,13 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
         super(monitorStateHandler, headlessGraphQLClient);
         this._agentAddress = agentAddress;
         this._avatarAddress = avatarAddress;
+        this._planetID = this._headlessGraphQLClient.getPlanetID();
     }
 
     protected async getEvents(
         blockIndex: number,
     ): Promise<(GarageUnloadEvent & TransactionLocation)[]> {
+        const planetID = this._planetID;
         const blockHash =
             await this._headlessGraphQLClient.getBlockHash(blockIndex);
         const events = await this._headlessGraphQLClient.getGarageUnloadEvents(
@@ -43,7 +46,7 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
         }
 
         return successEvents.map((ev) => {
-            return { blockHash, ...ev };
+            return { blockHash, planetID, ...ev };
         });
     }
 }

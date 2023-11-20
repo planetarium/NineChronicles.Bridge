@@ -7,6 +7,7 @@ import { NineChroniclesMonitor } from "./ninechronicles-block-monitor";
 
 export class AssetsTransferredMonitor extends NineChroniclesMonitor<AssetTransferredEvent> {
     private readonly _address: Address;
+    private readonly _planetID: string;
 
     constructor(
         monitorStateHandler: IMonitorStateHandler,
@@ -15,11 +16,13 @@ export class AssetsTransferredMonitor extends NineChroniclesMonitor<AssetTransfe
     ) {
         super(monitorStateHandler, headlessGraphQLClient);
         this._address = address;
+        this._planetID = this._headlessGraphQLClient.getPlanetID();
     }
 
     protected async getEvents(
         blockIndex: number,
     ): Promise<(AssetTransferredEvent & TransactionLocation)[]> {
+        const planetID = this._planetID;
         const blockHash =
             await this._headlessGraphQLClient.getBlockHash(blockIndex);
         const events =
@@ -40,7 +43,7 @@ export class AssetsTransferredMonitor extends NineChroniclesMonitor<AssetTransfe
         }
 
         return successEvents.map((ev) => {
-            return { blockHash, ...ev };
+            return { blockHash, planetID, ...ev };
         });
     }
 }
