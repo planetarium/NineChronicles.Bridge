@@ -6,6 +6,7 @@ import { TransactionResult } from "../types/transaction-result";
 import { TxId } from "../types/txid";
 
 export interface IHeadlessGraphQLClient {
+    getPlanetID(): string;
     getBlockIndex(blockHash: BlockHash): Promise<number>;
     getTipIndex(): Promise<number>;
     getBlockHash(index: number): Promise<BlockHash>;
