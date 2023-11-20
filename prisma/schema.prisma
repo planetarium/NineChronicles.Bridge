@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ActionType {
+  BURN
+  MINT
+  TRANSFER
+}
+
+enum TxResult {
+  INVALID
+  STAGING
+  SUCCESS
+  FAILURE
+}
+
+model Job {
+  id String @id
+  sender String
+  recipient String
+  src_planet String
+  ticker String
+  amount String
+  createdAt DateTime @default(now())
+  startedAt DateTime?
+  processedAt DateTime?
+  updatedAt DateTime @updatedAt
+
+  executions JobExecution[]
+}
+
+model Transaction {
+  txId String @id @unique
+  nonce BigInt @unique
+  raw Bytes
+  lastStatus TxResult?
+  statusUpdatedAt DateTime @default(now())
+
+  executions JobExecution[]
+}
+
+model JobExecution {
+  jobId String
+  job Job @relation(fields: [jobId], references: [id])
+
+  transactionId String
+  transaction Transaction @relation(fields: [transactionId], references: [txId])
+
+  actionType ActionType 
+  retries Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@id([jobId, transactionId])
+  @@unique([jobId, retries])
+}
