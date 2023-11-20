@@ -41,5 +41,6 @@
     "subscriptions-transport-ws": "^0.11.0",
     "tsx": "^3.12.7",
     "zod": "^3.22.4"
-  }
+  },
+  "packageManager": "yarn@1.22.19"
 }
