@@ -1,7 +1,7 @@
 import { Address } from "@planetarium/account";
 import { BencodexDictionary, Dictionary, decode } from "@planetarium/bencodex";
 import { Currency, FungibleAssetValue } from "@planetarium/tx";
-import { Client, fetchExchange } from "@urql/core";
+import { Client, fetchExchange, mapExchange } from "@urql/core";
 import { retryExchange } from "@urql/exchange-retry";
 import {
     GetAssetTransferredDocument,
@@ -37,6 +37,17 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         this._client = new Client({
             url: endpoint,
             exchanges: [
+                mapExchange({
+                    onOperation(operation) {
+                        
+                    },
+                    onResult(result) {
+                        
+                    },
+                    onError(error, operation) {
+                        
+                    },
+                })
                 retryExchange({
                     initialDelayMs: 1000,
                     maxDelayMs: 10000,
@@ -121,11 +132,11 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     ).length === 0
                     ? null
                     : {
-                          txId: tx.id,
-                          fungibleAssetValues,
-                          fungibleItems,
-                          memo,
-                      };
+                        txId: tx.id,
+                        fungibleAssetValues,
+                        fungibleItems,
+                        memo,
+                    };
             })
             .filter((ev) => ev !== null);
     }
