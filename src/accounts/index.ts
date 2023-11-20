@@ -7,8 +7,8 @@ type AccountType = "RAW" | "KMS";
 
 function getAccountTypeFromEnv(prefix: AllowedEnvPrefix): AccountType {
     const envKey = `${prefix}_ACCOUNT_TYPE` as const;
-    const keyType = process.env[envKey];
-    if (keyType === undefined) {
+    const keyType = process.env[envKey] || "RAW";
+    if (keyType === "RAW") {
         return "RAW";
     } else if (keyType === "KMS") {
         return "KMS";
