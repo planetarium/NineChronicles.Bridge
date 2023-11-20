@@ -18,19 +18,28 @@ import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
 import { AssetTransferredEvent } from "./types/asset-transferred-event";
 import { BlockHash } from "./types/block-hash";
 import { GarageUnloadEvent } from "./types/garage-unload-event";
+import { Planet } from "./types/registry";
 import { TransactionResult } from "./types/transaction-result";
 import { TxId } from "./types/txid";
 
 export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     private readonly _client: Client;
+    private readonly _planet: Planet;
+    private readonly _endpoints: string[];
+    private _endpointsIterator: IterableIterator<string>;
 
-    constructor(apiEndpoint: string, maxRetry: number) {
+    constructor(planet: Planet, maxRetry: number) {
+        this._planet = planet;
+        this.randomSortEndpoints();
+        this._endpoints = this._planet.rpcEndpoints["headless.gql"];
+        this._endpointsIterator = this._endpoints[Symbol.iterator]();
+        const endpoint = this.getEndpoint();
         this._client = new Client({
-            url: apiEndpoint,
+            url: endpoint,
             exchanges: [
                 retryExchange({
                     initialDelayMs: 1000,
-                    maxDelayMs: 15000,
+                    maxDelayMs: 10000,
                     randomDelay: true,
                     maxNumberAttempts: maxRetry,
                     retryWith: (error, operation) => {
@@ -38,9 +47,11 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                         // https://formidable.com/open-source/urql/docs/basics/errors/
                         // This automatically distinguish, log, process Network / GQL error.
                         if (error.networkError) {
+                            const fallback = this.getEndpoint();
+                            console.log(`Fallback RPC: ${fallback}`);
                             const context = {
                                 ...operation.context,
-                                url: apiEndpoint,
+                                url: fallback,
                             };
                             return { ...operation, context };
                         }
@@ -49,6 +60,25 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                 fetchExchange,
             ],
         });
+        console.log(
+            `GQL client initialization complete - ${this._planet.id} - ${endpoint}`,
+        );
+    }
+
+    private getEndpoint(): string {
+        const nextUrl = this._endpointsIterator.next();
+        if (nextUrl.done) {
+            // Reset the iterator when it reaches the end
+            this._endpointsIterator = this._endpoints[Symbol.iterator]();
+            return this.getEndpoint(); // Recursively get the next URL
+        }
+        return nextUrl.value;
+    }
+
+    private randomSortEndpoints() {
+        this._planet.rpcEndpoints["headless.gql"] = this._planet.rpcEndpoints[
+            "headless.gql"
+        ].sort(() => Math.random() - 0.5);
     }
 
     async getGarageUnloadEvents(
@@ -171,9 +201,11 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     }
 
     async getGenesisHash(): Promise<string> {
-        // substitute with registry? this takes 4 seconds.
-        return (await this._client.query(GetGenesisHashDocument, {})).data
-            .chainQuery.blockQuery.block.hash;
+        return (
+            this._planet.genesisHash ??
+            (await this._client.query(GetGenesisHashDocument, {})).data
+                .chainQuery.blockQuery.block.hash
+        );
     }
 
     async stageTransaction(payload: string): Promise<string> {

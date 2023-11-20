@@ -12,18 +12,17 @@ import { GarageUnloadMonitor } from "./monitors/garage-unload-monitor";
 import { AssetDownstreamObserver } from "./observers/asset-downstream-observer";
 import { AssetTransferredObserver } from "./observers/asset-transferred-observer";
 import { GarageObserver } from "./observers/garage-observer";
+import { PreloadHandler } from "./preload-handler";
 import { Signer } from "./signer";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
+import { Planet } from "./types/registry";
 
 (async () => {
-    const upstreamGQLClient = new HeadlessGraphQLClient(
-        process.env.NC_UPSTREAM_GQL_ENDPOINT,
-        3,
-    );
-    const downstreamGQLClient = new HeadlessGraphQLClient(
-        process.env.NC_DOWNSTREAM_GQL_ENDPOINT,
-        3,
-    );
+    const [upstreamPlanet, downstreamPlanet]: Planet[] =
+        await new PreloadHandler().preparePlanets();
+
+    const upstreamGQLClient = new HeadlessGraphQLClient(upstreamPlanet, 6);
+    const downstreamGQLClient = new HeadlessGraphQLClient(downstreamPlanet, 6);
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
             process.env.MONITOR_STATE_STORE_PATH,

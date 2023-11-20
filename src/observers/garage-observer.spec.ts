@@ -12,7 +12,15 @@ test("notify", async () => {
     const signer = new Signer(
         account,
         new HeadlessGraphQLClient(
-            "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+            {
+                id: "0x100000000000",
+                rpcEndpoints: {
+                    "headless.gql": [
+                        "https://9c-internal-rpc-1.nine-chronicles.com/graphql",
+                    ],
+                    "headless.grpc": [],
+                },
+            },
             1,
         ),
     );

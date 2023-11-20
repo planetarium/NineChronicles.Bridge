@@ -8,11 +8,27 @@ import { Signer } from "./signer";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 
 const odinClient = new HeadlessGraphQLClient(
-    "https://9c-internal-rpc-1.nine-chronicles.com/graphql",
+    {
+        id: "0x100000000000",
+        rpcEndpoints: {
+            "headless.gql": [
+                "https://9c-internal-rpc-1.nine-chronicles.com/graphql",
+            ],
+            "headless.grpc": [],
+        },
+    },
     1,
 );
 const heimdallClient = new HeadlessGraphQLClient(
-    "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+    {
+        id: "0x100000000001",
+        rpcEndpoints: {
+            "headless.gql": [
+                "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+            ],
+            "headless.grpc": [],
+        },
+    },
     1,
 );
 
