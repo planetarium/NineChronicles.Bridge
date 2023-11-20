@@ -31,7 +31,7 @@ import { Planet } from "./types/registry";
     const downstreamGQLClient = new HeadlessGraphQLClient(downstreamPlanet, 6);
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
-            process.env.MONITOR_STATE_STORE_PATH,
+            getRequiredEnv("MONITOR_STATE_STORE_PATH"),
         );
 
     const upstreamAssetsTransferredMonitorMonitor =
@@ -41,7 +41,7 @@ import { Planet } from "./types/registry";
                 "upstreamAssetTransferMonitor",
             ),
             upstreamGQLClient,
-            Address.fromHex(process.env.NC_VAULT_ADDRESS),
+            Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
         );
     const downstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
@@ -50,7 +50,7 @@ import { Planet } from "./types/registry";
                 "downstreamAssetTransferMonitor",
             ),
             downstreamGQLClient,
-            Address.fromHex(process.env.NC_VAULT_ADDRESS),
+            Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
         );
     const garageMonitor = new GarageUnloadMonitor(
         getMonitorStateHandler(
@@ -58,8 +58,8 @@ import { Planet } from "./types/registry";
             "upstreamGarageUnloadMonitor",
         ),
         upstreamGQLClient,
-        Address.fromHex(process.env.NC_VAULT_ADDRESS),
-        Address.fromHex(process.env.NC_VAULT_AVATAR_ADDRESS),
+        Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
+        Address.fromHex(getRequiredEnv("NC_VAULT_AVATAR_ADDRESS")),
     );
 
     const upstreamAccount = getAccountFromEnv("NC_UPSTREAM");
