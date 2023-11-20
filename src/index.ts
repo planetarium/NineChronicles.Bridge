@@ -1,8 +1,10 @@
 import { Address, RawPrivateKey } from "@planetarium/account";
+import { WebClient } from "@slack/web-api";
 import "dotenv/config";
 import { getAccountFromEnv } from "./accounts";
 import { AssetBurner } from "./asset-burner";
 import { AssetTransfer } from "./asset-transfer";
+import { getRequiredEnv } from "./env";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
 import { IMonitorStateStore } from "./interfaces/monitor-state-store";
 import { Minter } from "./minter";
@@ -14,6 +16,10 @@ import { AssetTransferredObserver } from "./observers/asset-transferred-observer
 import { GarageObserver } from "./observers/garage-observer";
 import { PreloadHandler } from "./preload-handler";
 import { Signer } from "./signer";
+import { SlackBot } from "./slack/bot";
+import { SlackChannel } from "./slack/channel";
+import { AppStartEvent } from "./slack/messages/app-start-event";
+import { AppStopEvent } from "./slack/messages/app-stop-event";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 import { Planet } from "./types/registry";
 
@@ -25,7 +31,7 @@ import { Planet } from "./types/registry";
     const downstreamGQLClient = new HeadlessGraphQLClient(downstreamPlanet, 6);
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
-            process.env.MONITOR_STATE_STORE_PATH,
+            getRequiredEnv("MONITOR_STATE_STORE_PATH"),
         );
 
     const upstreamAssetsTransferredMonitorMonitor =
@@ -35,7 +41,7 @@ import { Planet } from "./types/registry";
                 "upstreamAssetTransferMonitor",
             ),
             upstreamGQLClient,
-            Address.fromHex(process.env.NC_VAULT_ADDRESS),
+            Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
         );
     const downstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
@@ -44,7 +50,7 @@ import { Planet } from "./types/registry";
                 "downstreamAssetTransferMonitor",
             ),
             downstreamGQLClient,
-            Address.fromHex(process.env.NC_VAULT_ADDRESS),
+            Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
         );
     const garageMonitor = new GarageUnloadMonitor(
         getMonitorStateHandler(
@@ -52,8 +58,8 @@ import { Planet } from "./types/registry";
             "upstreamGarageUnloadMonitor",
         ),
         upstreamGQLClient,
-        Address.fromHex(process.env.NC_VAULT_ADDRESS),
-        Address.fromHex(process.env.NC_VAULT_AVATAR_ADDRESS),
+        Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
+        Address.fromHex(getRequiredEnv("NC_VAULT_AVATAR_ADDRESS")),
     );
 
     const upstreamAccount = getAccountFromEnv("NC_UPSTREAM");
@@ -75,6 +81,21 @@ import { Planet } from "./types/registry";
         new AssetDownstreamObserver(upstreamTransfer, downstreamBurner),
     );
 
+    const slackBot = new SlackBot(
+        getRequiredEnv("SLACK__BOT_USERNAME"),
+        new SlackChannel(
+            getRequiredEnv("SLACK__CHANNEL"),
+            new WebClient(getRequiredEnv("SLACK__BOT_TOKEN")),
+        ),
+    );
+
+    await slackBot.sendMessage(
+        new AppStartEvent(
+            await upstreamAccount.getAddress(),
+            await downstreamAccount.getAddress(),
+        ),
+    );
+
     garageMonitor.attach(new GarageObserver(minter));
 
     const handleSignal = () => {
@@ -83,7 +104,10 @@ import { Planet } from "./types/registry";
         upstreamAssetsTransferredMonitorMonitor.stop();
         downstreamAssetsTransferredMonitorMonitor.stop();
         garageMonitor.stop();
+
+        slackBot.sendMessage(new AppStopEvent());
     };
+
     process.on("SIGTERM", handleSignal);
     process.on("SIGINT", handleSignal);
 

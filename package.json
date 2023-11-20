@@ -28,6 +28,7 @@
     "@planetarium/bencodex": "^0.2.2",
     "@planetarium/tx": "^3.7.0",
     "@sentry/node": "^7.76.0",
+    "@slack/web-api": "^6.10.0",
     "@urql/core": "^4.2.0",
     "@urql/exchange-retry": "^1.2.0",
     "async-mutex": "^0.4.0",
