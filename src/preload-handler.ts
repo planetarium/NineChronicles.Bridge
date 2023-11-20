@@ -26,6 +26,7 @@ export class PreloadHandler {
             return [upsteamEndpoints, downstreamEndpoints];
         } catch (error) {
             console.error("PreparePlanets·failed.", error);
+            throw error;
         }
     }
 
