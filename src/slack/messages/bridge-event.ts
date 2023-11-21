@@ -46,27 +46,29 @@ export class BridgeEvent implements ISlackMessage {
     [SlackMessageSymbol] = true as const;
 
     constructor(
+        private readonly actionType: 'BURN' | 'MINT' | 'TRANSFER',
         private readonly requestTx: TxIdWithNetwork,
-        private readonly responseTxs: [string, TxIdWithNetwork][],
+        private readonly responseTx: TxIdWithNetwork,
         private readonly txLinkGetter?: TxLinkGetter,
-    ) {}
+    ) { }
 
     render() {
         const txLinkGetter = this.txLinkGetter || ncscanTxLinkGetter;
-        const responseTxAttachments = this.responseTxs.map(([name, tx]) => {
-            return {
-                title: `Response Tx (${name})`,
-                text: txLinkGetter(tx),
-            };
-        });
+        const responseTxAttachments = {
+            title: `Response Tx (${this.actionType})`
+            text: txLinkGetter(this.responseTx[0]),
+        };
         return {
             text: "Bridge Event Occurred.",
             attachments: [
                 {
+                    title: "Source - Destination",
+                    value: `${this.requestTx[0]} → ${this.dstPlanet}`
+                },
+                {
                     title: "Request Tx",
                     text: txLinkGetter(this.requestTx),
                 },
-                ...responseTxAttachments,
             ],
             fallback: "Bridge Event Occurred.",
         };
