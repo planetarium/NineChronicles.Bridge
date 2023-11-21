@@ -72,7 +72,8 @@ test("getAssetTransferredEvents()", async () => {
         events: evs.map((ev) => {
             return {
                 ...ev, blockHash: "", planetID: "0x100000000000",
-            }),
+            }
+        }),
     });
 
     return;

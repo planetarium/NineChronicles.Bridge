@@ -126,6 +126,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     ? null
                     : {
                           txId: tx.id,
+                          signer: tx.signer,
                           timestamp: tx.timestamp,
                           fungibleAssetValues,
                           fungibleItems,
