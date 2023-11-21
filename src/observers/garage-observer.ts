@@ -1,4 +1,5 @@
 import { IObserver } from ".";
+import { IJobExecutionStore } from "../interfaces/job-execution-store";
 import {
     IFungibleAssetValues,
     IFungibleItems,
@@ -16,9 +17,11 @@ export class GarageObserver
         }>
 {
     private readonly _minter: IMinter;
+    private readonly jobExecutionStore: IJobExecutionStore;
 
-    constructor(minter: IMinter) {
+    constructor(jobExecutionStore: IJobExecutionStore, minter: IMinter) {
         this._minter = minter;
+        this.jobExecutionStore = jobExecutionStore;
     }
 
     async notify(data: {
@@ -30,6 +33,7 @@ export class GarageObserver
         for (const {
             blockHash,
             txId,
+            planetID,
             fungibleAssetValues,
             fungibleItems,
             memo,

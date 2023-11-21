@@ -125,12 +125,12 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     ).length === 0
                     ? null
                     : {
-                        txId: tx.id,
-                        timestamp: tx.timestamp,
-                        fungibleAssetValues,
-                        fungibleItems,
-                        memo,
-                    };
+                          txId: tx.id,
+                          timestamp: tx.timestamp,
+                          fungibleAssetValues,
+                          fungibleItems,
+                          memo,
+                      };
             })
             .filter((ev) => ev !== null);
     }
