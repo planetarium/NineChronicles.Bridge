@@ -5,6 +5,7 @@ import { TxId } from "./txid";
 
 export interface GarageUnloadEvent {
     txId: TxId;
+    signer: string;
     timestamp: string;
     fungibleAssetValues: [Address, FungibleAssetValue][];
     fungibleItems: [Address, FungibleItemId, number][];
