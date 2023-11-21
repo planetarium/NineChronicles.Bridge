@@ -61,8 +61,8 @@ export class GarageObserver
             }
 
             if (requests.length !== 0) {
-                // @ts-ignore
                 const resTxId = await this._minter.mintAssets(
+                    // @ts-ignore
                     requests,
                     memoForMinter,
                 );

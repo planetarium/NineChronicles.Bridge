@@ -105,7 +105,7 @@ import { Planet } from "./types/registry";
             await downstreamAccount.getAddress(),
         ),
     );
-    
+
     garageMonitor.attach(new GarageObserver(jobExecutionStore, minter));
 
     const handleSignal = () => {
