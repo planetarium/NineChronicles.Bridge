@@ -12,17 +12,17 @@ import { TransactionLocation } from "../types/transaction-location";
 
 export class GarageObserver
     implements
-    IObserver<{
-        blockHash: BlockHash;
-        events: (GarageUnloadEvent & TransactionLocation)[];
-    }>
+        IObserver<{
+            blockHash: BlockHash;
+            events: (GarageUnloadEvent & TransactionLocation)[];
+        }>
 {
-    private readonly _slackbot: SlackBot
+    private readonly _slackbot: SlackBot;
     private readonly _minter: IMinter;
     private readonly jobExecutionStore: IJobExecutionStore;
 
     constructor(slackbot: SlackBot, minter: IMinter) {
-        this._slackbot = slackbot
+        this._slackbot = slackbot;
         this._minter = minter;
     }
 
@@ -70,10 +70,10 @@ export class GarageObserver
                 );
                 this._slackbot.sendMessage(
                     new BridgeEvent(
-                        'MINT',
+                        "MINT",
                         [planetID, txId],
                         [this._minter.getMinterPlanet(), resTxId],
-                    )
+                    ),
                 );
                 this.jobExecutionStore.putJobExec(
                     txId,

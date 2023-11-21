@@ -98,32 +98,18 @@ const slackBot = new SlackBot(
     const downstreamBurner = new AssetBurner(downstreamSigner);
 
     upstreamAssetsTransferredMonitorMonitor.attach(
-        new AssetTransferredObserver(minter),
+        new AssetTransferredObserver(slackBot, minter),
     );
 
     downstreamAssetsTransferredMonitorMonitor.attach(
         new AssetDownstreamObserver(
+            slackBot,
             upstreamTransfer,
             downstreamBurner,
         ),
     );
 
-    const slackBot = new SlackBot(
-        getRequiredEnv("SLACK__BOT_USERNAME"),
-        new SlackChannel(
-            getRequiredEnv("SLACK__CHANNEL"),
-            new WebClient(getRequiredEnv("SLACK__BOT_TOKEN")),
-        ),
-    );
-
-    await slackBot.sendMessage(
-        new AppStartEvent(
-            await upstreamAccount.getAddress(),
-            await downstreamAccount.getAddress(),
-        ),
-    );
-
-    garageMonitor.attach(new GarageObserver(jobExecutionStore, minter));
+    garageMonitor.attach(new GarageObserver(slackBot, minter));
 
     const handleSignal = () => {
         console.log("Handle signal.");

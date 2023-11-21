@@ -2,20 +2,20 @@ import { Address } from "@planetarium/account";
 import { IObserver } from ".";
 import { IAssetBurner } from "../interfaces/asset-burner";
 import { IAssetTransfer } from "../interfaces/asset-transfer";
+import { SlackBot } from "../slack/bot";
+import { BridgeEvent } from "../slack/messages/bridge-event";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { BlockHash } from "../types/block-hash";
 import { TransactionLocation } from "../types/transaction-location";
-import { SlackBot } from "../slack/bot";
-import { BridgeEvent } from "../slack/messages/bridge-event";
 
 export class AssetDownstreamObserver
     implements
-    IObserver<{
-        blockHash: BlockHash;
-        events: (AssetTransferredEvent & TransactionLocation)[];
-    }>
+        IObserver<{
+            blockHash: BlockHash;
+            events: (AssetTransferredEvent & TransactionLocation)[];
+        }>
 {
-    private readonly _slackbot: SlackBot
+    private readonly _slackbot: SlackBot;
     private readonly _transfer: IAssetTransfer;
     private readonly _burner: IAssetBurner;
 
@@ -24,7 +24,7 @@ export class AssetDownstreamObserver
         upstreamTransfer: IAssetTransfer,
         downstreamBurner: IAssetBurner,
     ) {
-        this._slackbot = slackbot
+        this._slackbot = slackbot;
         this._transfer = upstreamTransfer;
         this._burner = downstreamBurner;
     }
@@ -43,8 +43,8 @@ export class AssetDownstreamObserver
                 ev.blockHash,
                 "with",
                 `${ev.amount.currency.ticker} ` +
-                `(decimalPlaces: ${ev.amount.currency.decimalPlaces.toString()}, ` +
-                `rawValue: ${ev.amount.rawValue.toString()})`,
+                    `(decimalPlaces: ${ev.amount.currency.decimalPlaces.toString()}, ` +
+                    `rawValue: ${ev.amount.rawValue.toString()})`,
                 "amount",
             );
 
@@ -58,10 +58,10 @@ export class AssetDownstreamObserver
                 const burnTxId = await this._burner.burn(ev.amount, ev.txId);
                 this._slackbot.sendMessage(
                     new BridgeEvent(
-                        'BURN',
+                        "BURN",
                         [ev.planetID, ev.txId],
                         [this._burner.getBurnerPlanet(), burnTxId],
-                    )
+                    ),
                 );
                 this.debug("BurnAsset TxId is", burnTxId);
 
@@ -70,17 +70,17 @@ export class AssetDownstreamObserver
                 const amount =
                     ev.amount.currency.ticker === "NCG"
                         ? {
-                            currency: {
-                                ...ev.amount.currency,
-                                minters: new Set([
-                                    Buffer.from(
-                                        "47d082a115c63e7b58b1532d20e631538eafadde",
-                                        "hex",
-                                    ),
-                                ]),
-                            },
-                            rawValue: ev.amount.rawValue,
-                        }
+                              currency: {
+                                  ...ev.amount.currency,
+                                  minters: new Set([
+                                      Buffer.from(
+                                          "47d082a115c63e7b58b1532d20e631538eafadde",
+                                          "hex",
+                                      ),
+                                  ]),
+                              },
+                              rawValue: ev.amount.rawValue,
+                          }
                         : ev.amount;
 
                 this.debug("Try to transfer");
@@ -91,10 +91,10 @@ export class AssetDownstreamObserver
                 );
                 this._slackbot.sendMessage(
                     new BridgeEvent(
-                        'TRANSFER',
+                        "TRANSFER",
                         [ev.planetID, ev.txId],
                         [this._transfer.getTransferPlanet(), transferTxId],
-                    )
+                    ),
                 );
                 this.debug("TransferAsset TxId is", transferTxId);
             } catch (e) {

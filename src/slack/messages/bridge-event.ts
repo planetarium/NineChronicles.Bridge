@@ -4,10 +4,10 @@ export class BridgeEvent implements ISlackMessage {
     [SlackMessageSymbol] = true as const;
 
     constructor(
-        private readonly actionType: 'BURN' | 'MINT' | 'TRANSFER',
+        private readonly actionType: "BURN" | "MINT" | "TRANSFER",
         private readonly requestTx: TxIdWithNetwork,
         private readonly responseTx: TxIdWithNetwork,
-    ) { }
+    ) {}
 
     render() {
         const txLinkGetter = ncscanTxLinkGetter;
@@ -20,7 +20,7 @@ export class BridgeEvent implements ISlackMessage {
             attachments: [
                 {
                     title: "Source - Destination",
-                    value: `${this.requestTx[0]} → ${this.responseTx[0]}`
+                    value: `${this.requestTx[0]} → ${this.responseTx[0]}`,
                 },
                 {
                     title: "Request Tx",

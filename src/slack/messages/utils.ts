@@ -13,21 +13,21 @@ export type Network =
 export const planetIDToName = (planetID: string) => {
     switch (planetID) {
         case "0x000000000000":
-            return "odin"
+            return "odin";
         case "0x000000000001":
-            return "heimdall"
+            return "heimdall";
         case "0x000000000002":
-            return "idun"
+            return "idun";
         case "0x100000000000":
-            return "odin-internal"
+            return "odin-internal";
         case "0x100000000001":
-            return "heimdall-internal"
+            return "heimdall-internal";
         case "0x100000000002":
-            return "idun-internal"
+            return "idun-internal";
         default:
-            return planetID
+            return planetID;
     }
-}
+};
 export type TxIdWithNetwork = [planetID: string, TxId];
 type TxLinkGetter = (tx: TxIdWithNetwork) => string;
 
