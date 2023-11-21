@@ -14,4 +14,4 @@ COPY --from=build-env /build/node_modules /app/node_modules
 COPY package.json /app
 
 WORKDIR /app
-ENTRYPOINT ["npx", "tsx", "index.js"]
+ENTRYPOINT ["/usr/local/bin/node", "index.js"]
