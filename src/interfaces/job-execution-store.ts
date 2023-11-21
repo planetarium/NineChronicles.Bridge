@@ -1,15 +1,20 @@
-import { Job, PrismaClient, ActionType } from "@prisma/client";
-import { GarageUnloadEvent } from "../types/garage-unload-event";
-import { IJobExecutionStore } from "./interfaces/job-execution-store";
+import { ActionType, Job, PrismaClient } from "@prisma/client";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
+import { GarageUnloadEvent } from "../types/garage-unload-event";
 import { TransactionLocation } from "../types/transaction-location";
+import { IJobExecutionStore } from "./interfaces/job-execution-store";
 
 export interface IJobExecutionStore {
     putAssetTransferReq(
-        event: AssetTransferredEvent & TransactionLocation
+        event: AssetTransferredEvent & TransactionLocation,
     ): Promise<void>;
     putGarageUnloadReq(
-        event: GarageUnloadEvent & TransactionLocation
+        event: GarageUnloadEvent & TransactionLocation,
     ): Promise<void>;
-    putJobExec(reqTxId: string, resTxId: string, dstPlanet: string, actionType: ActionType);
+    putJobExec(
+        reqTxId: string,
+        resTxId: string,
+        dstPlanet: string,
+        actionType: ActionType,
+    );
 }
