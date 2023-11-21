@@ -2,12 +2,12 @@ import { Address } from "@planetarium/account";
 import { IObserver } from ".";
 import { IAssetBurner } from "../interfaces/asset-burner";
 import { IAssetTransfer } from "../interfaces/asset-transfer";
+import { ISlackMessageSender } from "../slack";
 import { SlackBot } from "../slack/bot";
 import { BridgeEvent } from "../slack/messages/bridge-event";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { BlockHash } from "../types/block-hash";
 import { TransactionLocation } from "../types/transaction-location";
-import { ISlackMessageSender } from "../slack";
 
 export class AssetDownstreamObserver
     implements

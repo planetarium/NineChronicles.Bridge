@@ -1,11 +1,11 @@
 import test, { mock } from "node:test";
 import { RawPrivateKey } from "@planetarium/account";
+import { ChatPostMessageResponse } from "@slack/web-api";
 import { HeadlessGraphQLClient } from "../headless-graphql-client";
 import { Minter } from "../minter";
 import { Signer } from "../signer";
 import { Sqlite3MonitorStateStore } from "../sqlite3-monitor-state-store";
 import { GarageObserver } from "./garage-observer";
-import { ChatPostMessageResponse } from "@slack/web-api";
 
 const FAKE_SLACK_MESSAGE_SENDER = {
     sendMessage() {
