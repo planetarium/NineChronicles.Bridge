@@ -20,6 +20,10 @@ export class Signer {
         return this._account.getAddress();
     }
 
+    getSignPlanet(): string {
+        return this._client.getPlanetID();
+    }
+
     async sendTx(action: RecordView): Promise<string> {
         const address = await this._account.getAddress();
         return this.mutex.runExclusive(async () => {
