@@ -23,19 +23,30 @@ enum TxResult {
   FAILURE
 }
 
-model Job {
-  id String @id
+model Request {
+  req_tx_id String @id @unique
   sender String
+  senderAvatar String?
   recipient String
+  recipientAvatar String?
   src_planet String
   ticker String
   amount String
+  timestamp DateTime
+
+  job Job?
+}
+
+model Job {
+  req_tx_id String @id @unique
+  request Request @relation(fields: [req_tx_id], references: [req_tx_id])
+
   createdAt DateTime @default(now())
   startedAt DateTime?
   processedAt DateTime?
   updatedAt DateTime @updatedAt
 
-  executions JobExecution[]
+  execution JobExecution[]
 }
 
 model Transaction {
@@ -50,8 +61,9 @@ model Transaction {
 
 model JobExecution {
   jobId String
-  job Job @relation(fields: [jobId], references: [id])
+  job Job @relation(fields: [jobId], references: [req_tx_id])
 
+  dstPlanetId String
   transactionId String
   transaction Transaction @relation(fields: [transactionId], references: [txId])
 
