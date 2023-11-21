@@ -1,5 +1,6 @@
 import { Address } from "@planetarium/account";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
+import { IJobExecutionStore } from "../interfaces/job-execution-store";
 import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
 import { TransactionLocation } from "../types/transaction-location";
