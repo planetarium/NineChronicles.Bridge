@@ -23,6 +23,14 @@ import { AppStopEvent } from "./slack/messages/app-stop-event";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 import { Planet } from "./types/registry";
 
+const slackBot = new SlackBot(
+    getRequiredEnv("SLACK__BOT_USERNAME"),
+    new SlackChannel(
+        getRequiredEnv("SLACK__CHANNEL"),
+        new WebClient(getRequiredEnv("SLACK__BOT_TOKEN")),
+    ),
+);
+
 (async () => {
     const [upstreamPlanet, downstreamPlanet]: Planet[] =
         await new PreloadHandler().preparePlanets();
@@ -81,14 +89,6 @@ import { Planet } from "./types/registry";
         new AssetDownstreamObserver(upstreamTransfer, downstreamBurner),
     );
 
-    const slackBot = new SlackBot(
-        getRequiredEnv("SLACK__BOT_USERNAME"),
-        new SlackChannel(
-            getRequiredEnv("SLACK__CHANNEL"),
-            new WebClient(getRequiredEnv("SLACK__BOT_TOKEN")),
-        ),
-    );
-
     await slackBot.sendMessage(
         new AppStartEvent(
             await upstreamAccount.getAddress(),
@@ -114,7 +114,8 @@ import { Planet } from "./types/registry";
     upstreamAssetsTransferredMonitorMonitor.run();
     downstreamAssetsTransferredMonitorMonitor.run();
     garageMonitor.run();
-})().catch((error) => {
+})().catch(async (error) => {
     console.error(error);
+    await slackBot.sendMessage(new AppStopEvent(error));
     process.exit(-1);
 });
