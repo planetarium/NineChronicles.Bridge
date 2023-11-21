@@ -1,6 +1,9 @@
 import { FungibleAssetValue } from "@planetarium/tx";
 import { IObserver } from ".";
 import { IMinter } from "../interfaces/minter";
+import { ISlackMessageSender } from "../slack";
+import { SlackBot } from "../slack/bot";
+import { BridgeEvent } from "../slack/messages/bridge-event";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { BlockHash } from "../types/block-hash";
 import { TransactionLocation } from "../types/transaction-location";
@@ -9,12 +12,15 @@ export class AssetTransferredObserver
     implements
         IObserver<{
             blockHash: BlockHash;
+            planetID: string;
             events: (AssetTransferredEvent & TransactionLocation)[];
         }>
 {
     private readonly _minter: IMinter;
+    private readonly _slackbot: ISlackMessageSender;
+    constructor(slackbot: ISlackMessageSender, minter: IMinter) {
+        this._slackbot = slackbot;
 
-    constructor(minter: IMinter) {
         this._minter = minter;
     }
 
@@ -24,7 +30,13 @@ export class AssetTransferredObserver
     }): Promise<void> {
         const { events } = data;
 
-        for (const { blockHash, txId, amount, memo: recipient } of events) {
+        for (const {
+            blockHash,
+            planetID,
+            txId,
+            amount,
+            memo: recipient,
+        } of events) {
             // TODO check memo & refund if needed.
 
             // Strip minters to mint well.
@@ -36,9 +48,16 @@ export class AssetTransferredObserver
                 rawValue: amount.rawValue,
             };
 
-            await this._minter.mintAssets(
+            const resTxId = await this._minter.mintAssets(
                 [{ recipient, amount: amountToMint }],
                 null,
+            );
+            await this._slackbot.sendMessage(
+                new BridgeEvent(
+                    "MINT",
+                    [planetID, txId],
+                    [this._minter.getMinterPlanet(), resTxId],
+                ),
             );
         }
     }

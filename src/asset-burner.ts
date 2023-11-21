@@ -10,6 +10,10 @@ export class AssetBurner implements IAssetBurner {
         this.signer = signer;
     }
 
+    getBurnerPlanet(): string {
+        return this.signer.getSignPlanet();
+    }
+
     async burn(amount: FungibleAssetValue, memo: string): Promise<string> {
         const sender = (await this.signer.getAddress()).toBytes();
         const action = new RecordView(

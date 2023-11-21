@@ -37,6 +37,7 @@ const slackBot = new SlackBot(
 
     const upstreamGQLClient = new HeadlessGraphQLClient(upstreamPlanet, 6);
     const downstreamGQLClient = new HeadlessGraphQLClient(downstreamPlanet, 6);
+
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
             getRequiredEnv("MONITOR_STATE_STORE_PATH"),
@@ -73,6 +74,13 @@ const slackBot = new SlackBot(
     const upstreamAccount = getAccountFromEnv("NC_UPSTREAM");
     const downstreamAccount = getAccountFromEnv("NC_DOWNSTREAM");
 
+    await slackBot.sendMessage(
+        new AppStartEvent(
+            await upstreamAccount.getAddress(),
+            await downstreamAccount.getAddress(),
+        ),
+    );
+
     const upstreamSigner = new Signer(upstreamAccount, upstreamGQLClient);
     const downstreamSigner = new Signer(downstreamAccount, downstreamGQLClient);
 
@@ -82,21 +90,18 @@ const slackBot = new SlackBot(
     const downstreamBurner = new AssetBurner(downstreamSigner);
 
     upstreamAssetsTransferredMonitorMonitor.attach(
-        new AssetTransferredObserver(minter),
+        new AssetTransferredObserver(slackBot, minter),
     );
 
     downstreamAssetsTransferredMonitorMonitor.attach(
-        new AssetDownstreamObserver(upstreamTransfer, downstreamBurner),
-    );
-
-    await slackBot.sendMessage(
-        new AppStartEvent(
-            await upstreamAccount.getAddress(),
-            await downstreamAccount.getAddress(),
+        new AssetDownstreamObserver(
+            slackBot,
+            upstreamTransfer,
+            downstreamBurner,
         ),
     );
 
-    garageMonitor.attach(new GarageObserver(minter));
+    garageMonitor.attach(new GarageObserver(slackBot, minter));
 
     const handleSignal = () => {
         console.log("Handle signal.");

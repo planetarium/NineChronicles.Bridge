@@ -4,6 +4,9 @@ import {
     IFungibleItems,
     IMinter,
 } from "../interfaces/minter";
+import { ISlackMessageSender } from "../slack";
+import { SlackBot } from "../slack/bot";
+import { BridgeEvent } from "../slack/messages/bridge-event";
 import { BlockHash } from "../types/block-hash";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
 import { TransactionLocation } from "../types/transaction-location";
@@ -15,9 +18,11 @@ export class GarageObserver
             events: (GarageUnloadEvent & TransactionLocation)[];
         }>
 {
+    private readonly _slackbot: ISlackMessageSender;
     private readonly _minter: IMinter;
 
-    constructor(minter: IMinter) {
+    constructor(slackbot: ISlackMessageSender, minter: IMinter) {
+        this._slackbot = slackbot;
         this._minter = minter;
     }
 
@@ -30,6 +35,7 @@ export class GarageObserver
         for (const {
             blockHash,
             txId,
+            planetID,
             fungibleAssetValues,
             fungibleItems,
             memo,
@@ -57,8 +63,18 @@ export class GarageObserver
             }
 
             if (requests.length !== 0) {
-                // @ts-ignore
-                await this._minter.mintAssets(requests, memoForMinter);
+                const resTxId = await this._minter.mintAssets(
+                    // @ts-ignore
+                    requests,
+                    memoForMinter,
+                );
+                await this._slackbot.sendMessage(
+                    new BridgeEvent(
+                        "MINT",
+                        [planetID, txId],
+                        [this._minter.getMinterPlanet(), resTxId],
+                    ),
+                );
             }
         }
     }

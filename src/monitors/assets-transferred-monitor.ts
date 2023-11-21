@@ -20,6 +20,7 @@ export class AssetsTransferredMonitor extends NineChroniclesMonitor<AssetTransfe
     protected async getEvents(
         blockIndex: number,
     ): Promise<(AssetTransferredEvent & TransactionLocation)[]> {
+        const planetID = this._headlessGraphQLClient.getPlanetID();
         const blockHash =
             await this._headlessGraphQLClient.getBlockHash(blockIndex);
         const events =
@@ -40,7 +41,7 @@ export class AssetsTransferredMonitor extends NineChroniclesMonitor<AssetTransfe
         }
 
         return successEvents.map((ev) => {
-            return { blockHash, ...ev };
+            return { blockHash, planetID, ...ev };
         });
     }
 }

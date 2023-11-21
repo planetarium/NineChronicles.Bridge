@@ -23,6 +23,7 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
     protected async getEvents(
         blockIndex: number,
     ): Promise<(GarageUnloadEvent & TransactionLocation)[]> {
+        const planetID = this._headlessGraphQLClient.getPlanetID();
         const blockHash =
             await this._headlessGraphQLClient.getBlockHash(blockIndex);
         const events = await this._headlessGraphQLClient.getGarageUnloadEvents(
@@ -43,7 +44,7 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
         }
 
         return successEvents.map((ev) => {
-            return { blockHash, ...ev };
+            return { blockHash, planetID, ...ev };
         });
     }
 }

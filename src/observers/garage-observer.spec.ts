@@ -1,10 +1,17 @@
-import test from "node:test";
+import test, { mock } from "node:test";
 import { RawPrivateKey } from "@planetarium/account";
+import { ChatPostMessageResponse } from "@slack/web-api";
 import { HeadlessGraphQLClient } from "../headless-graphql-client";
 import { Minter } from "../minter";
 import { Signer } from "../signer";
 import { Sqlite3MonitorStateStore } from "../sqlite3-monitor-state-store";
 import { GarageObserver } from "./garage-observer";
+
+const FAKE_SLACK_MESSAGE_SENDER = {
+    sendMessage() {
+        return Promise.resolve({}) as Promise<ChatPostMessageResponse>;
+    },
+};
 
 test("notify", async () => {
     const monitorStateStore = await Sqlite3MonitorStateStore.open("test");
@@ -25,12 +32,15 @@ test("notify", async () => {
         ),
     );
     const minter = new Minter(signer);
-    const observer = new GarageObserver(minter);
+    const observer = new GarageObserver(FAKE_SLACK_MESSAGE_SENDER, minter);
     observer.notify({
         blockHash: "xxx",
         events: [
             {
                 blockHash: "xxx",
+                planetID: "odin",
+                signer: "0x0000000000000000000000000000000000000000",
+                timestamp: "2023-11-17T16:59:29.374833+00:00",
                 fungibleAssetValues: [
                     [
                         await account.getAddress(),
