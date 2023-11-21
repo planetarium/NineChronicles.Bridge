@@ -10,6 +10,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum RequestType {
+  UNLOAD_GARAGE
+  TRANSFER_ASSETS
+}
+
 enum ActionType {
   BURN
   MINT
@@ -22,19 +27,33 @@ enum TxResult {
   SUCCESS
   FAILURE
 }
-
 model Request {
   req_tx_id String @id @unique
-  sender String
-  senderAvatar String?
-  recipient String
-  recipientAvatar String?
+  req_type RequestType
   src_planet String
-  ticker String
-  amount String
   timestamp DateTime
 
   job Job?
+  transfer TrasferAssetsRequest?
+  garage UnloadGarageRequest?
+}
+model TrasferAssetsRequest {
+  req_tx_id   String   @id @unique
+  request     Request  @relation(fields: [req_tx_id], references: [req_tx_id])
+  sender String
+  recipient String
+  ticker String
+  amount String
+}
+
+model UnloadGarageRequest {
+  req_tx_id   String   @id @unique
+  request     Request  @relation(fields: [req_tx_id], references: [req_tx_id])
+  sender String
+  recipient String
+  recipientAvatar String
+  FungibleAssetValues Json?
+  FungibleItems Json?
 }
 
 model Job {
