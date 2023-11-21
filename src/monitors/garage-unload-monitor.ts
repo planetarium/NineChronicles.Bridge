@@ -11,11 +11,12 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
 
     constructor(
         monitorStateHandler: IMonitorStateHandler,
+        jobExecutionStore: IJobExecutionStore,
         headlessGraphQLClient: IHeadlessGraphQLClient,
         agentAddress: Address,
         avatarAddress: Address,
     ) {
-        super(monitorStateHandler, headlessGraphQLClient);
+        super(monitorStateHandler, jobExecutionStore, headlessGraphQLClient);
         this._agentAddress = agentAddress;
         this._avatarAddress = avatarAddress;
     }

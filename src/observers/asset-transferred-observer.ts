@@ -1,5 +1,6 @@
 import { FungibleAssetValue } from "@planetarium/tx";
 import { IObserver } from ".";
+import { IJobExecutionStore } from "../interfaces/job-execution-store";
 import { IMinter } from "../interfaces/minter";
 import { ISlackMessageSender } from "../slack";
 import { SlackBot } from "../slack/bot";
