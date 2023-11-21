@@ -32,6 +32,7 @@ test("notify", async () => {
         blockHash: "xxx",
         events: [
             {
+                signer: "0xcb75c84d76a6f97a2d55882aea4436674c288673",
                 blockHash: "xxx",
                 planetID: "0x100000000000",
                 fungibleAssetValues: [

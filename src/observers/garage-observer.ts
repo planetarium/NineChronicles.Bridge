@@ -62,7 +62,16 @@ export class GarageObserver
 
             if (requests.length !== 0) {
                 // @ts-ignore
-                await this._minter.mintAssets(requests, memoForMinter);
+                const resTxId = await this._minter.mintAssets(
+                    requests,
+                    memoForMinter,
+                );
+                this.jobExecutionStore.putJobExec(
+                    txId,
+                    resTxId,
+                    this._minter.getMinterPlanet(),
+                    "MINT",
+                );
             }
         }
     }

@@ -54,6 +54,12 @@ export class AssetDownstreamObserver
             try {
                 this.debug("Try to burn");
                 const burnTxId = await this._burner.burn(ev.amount, ev.txId);
+                this.jobExecutionStore.putJobExec(
+                    ev.txId,
+                    burnTxId,
+                    this._burner.getBurnerPlanet(),
+                    "BURN",
+                );
                 this.debug("BurnAsset TxId is", burnTxId);
 
                 const targetAddress = Address.fromHex(ev.memo);
@@ -79,6 +85,12 @@ export class AssetDownstreamObserver
                     targetAddress,
                     amount,
                     null,
+                );
+                this.jobExecutionStore.putJobExec(
+                    ev.txId,
+                    transferTxId,
+                    this._transfer.getTransferPlanet(),
+                    "TRANSFER",
                 );
                 this.debug("TransferAsset TxId is", transferTxId);
             } catch (e) {

@@ -40,9 +40,15 @@ export class AssetTransferredObserver
                 rawValue: amount.rawValue,
             };
 
-            await this._minter.mintAssets(
+            const resTxId = await this._minter.mintAssets(
                 [{ recipient, amount: amountToMint }],
                 null,
+            );
+            await this.jobExecutionStore.putJobExec(
+                txId,
+                resTxId,
+                this._minter.getMinterPlanet(),
+                "MINT",
             );
         }
     }
