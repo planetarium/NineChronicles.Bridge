@@ -33,6 +33,10 @@ export class Minter implements IMinter {
     getMinterAddress(): Promise<Address> {
         return this.signer.getAddress();
     }
+
+    getMinterPlanet(): string {
+        return this.signer.getSignPlanet();
+    }
 }
 
 function encodeMintSpec(value: IFungibleAssetValues | IFungibleItems): Value {

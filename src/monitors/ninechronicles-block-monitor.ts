@@ -1,6 +1,8 @@
+import { Job } from "@prisma/client";
 import { captureException } from "@sentry/node";
 import { Monitor } from ".";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
+import { IJobExecutionStore } from "../interfaces/job-execution-store";
 import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { BlockHash } from "../types/block-hash";
 import { TransactionLocation } from "../types/transaction-location";
@@ -18,13 +20,14 @@ export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
 > {
     private readonly _monitorStateHandler: IMonitorStateHandler;
     private readonly _delayMilliseconds: number;
-
+    protected readonly _jobExecutionStore: IJobExecutionStore;
     protected readonly _headlessGraphQLClient: IHeadlessGraphQLClient;
 
     private latestBlockNumber: number | undefined;
 
     constructor(
         monitorStateHandler: IMonitorStateHandler,
+        jobExecutionStore: IJobExecutionStore,
         headlessGraphQLClient: IHeadlessGraphQLClient,
         delayMilliseconds: number = 15 * 1000,
     ) {
@@ -32,11 +35,13 @@ export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
 
         this._monitorStateHandler = monitorStateHandler;
         this._headlessGraphQLClient = headlessGraphQLClient;
+        this._jobExecutionStore = jobExecutionStore;
         this._delayMilliseconds = delayMilliseconds;
     }
 
     async *loop(): AsyncIterableIterator<{
         blockHash: BlockHash;
+        planetID: string;
         events: (TEventData & TransactionLocation)[];
     }> {
         const nullableLatestBlockHash = await this._monitorStateHandler.load();
@@ -47,6 +52,7 @@ export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
         } else {
             this.latestBlockNumber = await this.getTipIndex();
         }
+        const planetID = this._headlessGraphQLClient.getPlanetID();
 
         while (this.isRunnning()) {
             console.log(
@@ -64,6 +70,7 @@ export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
 
                     yield {
                         blockHash,
+                        planetID,
                         events: await this.getEvents(blockIndex),
                     };
 

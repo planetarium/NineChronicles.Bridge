@@ -1,7 +1,7 @@
 import { Address } from "@planetarium/account";
 import { BencodexDictionary, Dictionary, decode } from "@planetarium/bencodex";
 import { Currency, FungibleAssetValue } from "@planetarium/tx";
-import { Client, fetchExchange } from "@urql/core";
+import { Client, fetchExchange, mapExchange } from "@urql/core";
 import { retryExchange } from "@urql/exchange-retry";
 import {
     GetAssetTransferredDocument,
@@ -65,6 +65,10 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         );
     }
 
+    public getPlanetID(): string {
+        return this._planet.id;
+    }
+
     private getEndpoint(): string {
         const nextUrl = this._endpointsIterator.next();
         if (nextUrl.done) {
@@ -122,6 +126,8 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     ? null
                     : {
                           txId: tx.id,
+                          signer: tx.signer,
+                          timestamp: tx.timestamp,
                           fungibleAssetValues,
                           fungibleItems,
                           memo,
@@ -160,6 +166,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         return data.data.transaction.ncTransactions
             .map((tx) => {
                 const txId = tx.id;
+                const timestamp = tx.timestamp;
                 const action = decode(
                     Buffer.from(tx.actions[0].raw, "hex"),
                 ) as Dictionary;
@@ -186,6 +193,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
 
                 return {
                     txId,
+                    timestamp,
                     sender,
                     recipient,
                     amount,

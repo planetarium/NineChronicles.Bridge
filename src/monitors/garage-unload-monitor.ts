@@ -1,5 +1,6 @@
 import { Address } from "@planetarium/account";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
+import { IJobExecutionStore } from "../interfaces/job-execution-store";
 import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
 import { TransactionLocation } from "../types/transaction-location";
@@ -11,11 +12,12 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
 
     constructor(
         monitorStateHandler: IMonitorStateHandler,
+        jobExecutionStore: IJobExecutionStore,
         headlessGraphQLClient: IHeadlessGraphQLClient,
         agentAddress: Address,
         avatarAddress: Address,
     ) {
-        super(monitorStateHandler, headlessGraphQLClient);
+        super(monitorStateHandler, jobExecutionStore, headlessGraphQLClient);
         this._agentAddress = agentAddress;
         this._avatarAddress = avatarAddress;
     }
@@ -23,6 +25,7 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
     protected async getEvents(
         blockIndex: number,
     ): Promise<(GarageUnloadEvent & TransactionLocation)[]> {
+        const planetID = this._headlessGraphQLClient.getPlanetID();
         const blockHash =
             await this._headlessGraphQLClient.getBlockHash(blockIndex);
         const events = await this._headlessGraphQLClient.getGarageUnloadEvents(
@@ -43,7 +46,7 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
         }
 
         return successEvents.map((ev) => {
-            return { blockHash, ...ev };
+            return { blockHash, planetID, ...ev };
         });
     }
 }
