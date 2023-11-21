@@ -11,7 +11,7 @@ export class JobExecutionStore implements IJobExecutionStore {
         this._prisma = new PrismaClient();
     }
     async putAssetTransferReq(
-        event: AssetTransferredEvent & TransactionLocation
+        event: AssetTransferredEvent & TransactionLocation,
     ) {
         await this._prisma.request.create({
             data: {
@@ -29,9 +29,9 @@ export class JobExecutionStore implements IJobExecutionStore {
                 },
                 job: {
                     create: {
-                        startedAt: new Date(event.timestamp)
-                    }
-                }
+                        startedAt: new Date(event.timestamp),
+                    },
+                },
             },
         });
     }
@@ -49,26 +49,33 @@ export class JobExecutionStore implements IJobExecutionStore {
                         sender: event.signer,
                         recipient: parsed[0],
                         recipientAvatar: parsed[1],
-                        FungibleAssetValues: JSON.stringify(event.fungibleAssetValues),
+                        FungibleAssetValues: JSON.stringify(
+                            event.fungibleAssetValues,
+                        ),
                         FungibleItems: JSON.stringify(event.fungibleItems),
                     },
                 },
                 job: {
                     create: {
                         startedAt: new Date(event.timestamp),
-                    }
-                }
+                    },
+                },
             },
         });
     }
-    async putJobExec(reqTxId: string, resTxId: string, dstPlanet: string, actionType: $Enums.ActionType) {
+    async putJobExec(
+        reqTxId: string,
+        resTxId: string,
+        dstPlanet: string,
+        actionType: $Enums.ActionType,
+    ) {
         await this._prisma.jobExecution.create({
             data: {
                 jobId: reqTxId,
                 dstPlanetId: dstPlanet,
                 transactionId: resTxId,
                 actionType: actionType,
-            }
-        })
+            },
+        });
     }
 }

@@ -1,12 +1,12 @@
 import test from "node:test";
 import { Address, RawPrivateKey } from "@planetarium/account";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
+import { JobExecutionStore } from "./job-execution-store";
 import { Minter } from "./minter";
 import { AssetTransferredObserver } from "./observers/asset-transferred-observer";
 import { GarageObserver } from "./observers/garage-observer";
 import { Signer } from "./signer";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
-import { JobExecutionStore } from "./job-execution-store";
 
 const odinClient = new HeadlessGraphQLClient(
     {
@@ -33,6 +33,8 @@ const heimdallClient = new HeadlessGraphQLClient(
     1,
 );
 
+const jobExecutionStore = new JobExecutionStore();
+
 test(".getGarageUnloadEvents()", async () => {
     const x = await odinClient.getGarageUnloadEvents(
         8286963,
@@ -43,11 +45,11 @@ test(".getGarageUnloadEvents()", async () => {
     const account = RawPrivateKey.fromHex("");
     const signer = new Signer(account, heimdallClient);
     const minter = new Minter(signer);
-    const observer = new GarageObserver(minter);
+    const observer = new GarageObserver(jobExecutionStore, minter);
     await observer.notify({
         blockHash: "",
         events: x.map((ev) => {
-            return { ...ev, blockHash: "" };
+            return { ...ev, blockHash: "", planetID: "" };
         }),
     });
 
@@ -61,7 +63,6 @@ test("getAssetTransferredEvents()", async () => {
     );
 
     const account = RawPrivateKey.fromHex("");
-    new jobExecutionStore = new JobExecutionStore();
     const signer = new Signer(account, heimdallClient);
     const minter = new Minter(signer);
     const stateStore = await Sqlite3MonitorStateStore.open("test");
