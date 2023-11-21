@@ -1,5 +1,4 @@
 import { Address } from "@planetarium/account";
-import { Job } from "@prisma/client";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
 import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";

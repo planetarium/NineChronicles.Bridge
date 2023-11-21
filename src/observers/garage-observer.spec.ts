@@ -1,7 +1,6 @@
 import test from "node:test";
 import { RawPrivateKey } from "@planetarium/account";
 import { HeadlessGraphQLClient } from "../headless-graphql-client";
-import { JobExecutionStore } from "../job-execution-store";
 import { Minter } from "../minter";
 import { Signer } from "../signer";
 import { Sqlite3MonitorStateStore } from "../sqlite3-monitor-state-store";
@@ -9,7 +8,6 @@ import { GarageObserver } from "./garage-observer";
 
 test("notify", async () => {
     const monitorStateStore = await Sqlite3MonitorStateStore.open("test");
-    const jobExecutionStore = await new JobExecutionStore();
     const account = RawPrivateKey.fromHex("");
     const signer = new Signer(
         account,
@@ -27,14 +25,12 @@ test("notify", async () => {
         ),
     );
     const minter = new Minter(signer);
-    const observer = new GarageObserver(jobExecutionStore, minter);
+    const observer = new GarageObserver(minter);
     observer.notify({
         blockHash: "xxx",
         events: [
             {
-                signer: "0xcb75c84d76a6f97a2d55882aea4436674c288673",
                 blockHash: "xxx",
-                planetID: "0x100000000000",
                 fungibleAssetValues: [
                     [
                         await account.getAddress(),
@@ -57,7 +53,6 @@ test("notify", async () => {
                         100,
                     ],
                 ],
-                timestamp: "2023-11-20T13:54:42.227818+00:00",
                 txId: "",
                 memo: JSON.stringify([
                     "0x019101FEec7ed4f918D396827E1277DEda1e20D4",

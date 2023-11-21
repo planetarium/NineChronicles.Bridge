@@ -1,8 +1,6 @@
-import { Job } from "@prisma/client";
 import { captureException } from "@sentry/node";
 import { Monitor } from ".";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
-import { IJobExecutionStore } from "../interfaces/job-execution-store";
 import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { BlockHash } from "../types/block-hash";
 import { TransactionLocation } from "../types/transaction-location";
