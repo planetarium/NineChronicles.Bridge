@@ -105,7 +105,7 @@ const slackBot = new SlackBot(
             await downstreamAccount.getAddress(),
         ),
     );
-    
+
     garageMonitor.attach(new GarageObserver(jobExecutionStore, minter));
 
     const handleSignal = () => {
