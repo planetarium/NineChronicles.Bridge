@@ -1,5 +1,6 @@
 import { FungibleAssetValue } from "@planetarium/tx";
 import { IObserver } from ".";
+import { IJobExecutionStore } from "../interfaces/job-execution-store";
 import { IMinter } from "../interfaces/minter";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { BlockHash } from "../types/block-hash";
@@ -9,12 +10,15 @@ export class AssetTransferredObserver
     implements
         IObserver<{
             blockHash: BlockHash;
+            planetID: string;
             events: (AssetTransferredEvent & TransactionLocation)[];
         }>
 {
     private readonly _minter: IMinter;
+    private readonly jobExecutionStore: IJobExecutionStore;
 
-    constructor(minter: IMinter) {
+    constructor(jobExecutionStore: IJobExecutionStore, minter: IMinter) {
+        this.jobExecutionStore = jobExecutionStore;
         this._minter = minter;
     }
 

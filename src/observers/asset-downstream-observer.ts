@@ -2,6 +2,7 @@ import { Address } from "@planetarium/account";
 import { IObserver } from ".";
 import { IAssetBurner } from "../interfaces/asset-burner";
 import { IAssetTransfer } from "../interfaces/asset-transfer";
+import { IJobExecutionStore } from "../interfaces/job-execution-store";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { BlockHash } from "../types/block-hash";
 import { TransactionLocation } from "../types/transaction-location";
@@ -13,10 +14,12 @@ export class AssetDownstreamObserver
             events: (AssetTransferredEvent & TransactionLocation)[];
         }>
 {
+    private readonly jobExecutionStore: IJobExecutionStore;
     private readonly _transfer: IAssetTransfer;
     private readonly _burner: IAssetBurner;
 
     constructor(
+        jobExecutionStore: IJobExecutionStore,
         upstreamTransfer: IAssetTransfer,
         downstreamBurner: IAssetBurner,
     ) {

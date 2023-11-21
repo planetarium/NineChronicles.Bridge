@@ -6,7 +6,9 @@ import { AssetBurner } from "./asset-burner";
 import { AssetTransfer } from "./asset-transfer";
 import { getRequiredEnv } from "./env";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
+import { IJobExecutionStore } from "./interfaces/job-execution-store";
 import { IMonitorStateStore } from "./interfaces/monitor-state-store";
+import { JobExecutionStore } from "./job-execution-store";
 import { Minter } from "./minter";
 import { getMonitorStateHandler } from "./monitor-state-handler";
 import { AssetsTransferredMonitor } from "./monitors/assets-transferred-monitor";
@@ -33,6 +35,7 @@ import { Planet } from "./types/registry";
         await Sqlite3MonitorStateStore.open(
             getRequiredEnv("MONITOR_STATE_STORE_PATH"),
         );
+    const jobExecutionStore: IJobExecutionStore = new JobExecutionStore();
 
     const upstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
@@ -40,6 +43,7 @@ import { Planet } from "./types/registry";
                 monitorStateStore,
                 "upstreamAssetTransferMonitor",
             ),
+            jobExecutionStore,
             upstreamGQLClient,
             Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
         );
@@ -49,6 +53,7 @@ import { Planet } from "./types/registry";
                 monitorStateStore,
                 "downstreamAssetTransferMonitor",
             ),
+            jobExecutionStore,
             downstreamGQLClient,
             Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
         );
@@ -57,6 +62,7 @@ import { Planet } from "./types/registry";
             monitorStateStore,
             "upstreamGarageUnloadMonitor",
         ),
+        jobExecutionStore,
         upstreamGQLClient,
         Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
         Address.fromHex(getRequiredEnv("NC_VAULT_AVATAR_ADDRESS")),
@@ -74,11 +80,15 @@ import { Planet } from "./types/registry";
     const downstreamBurner = new AssetBurner(downstreamSigner);
 
     upstreamAssetsTransferredMonitorMonitor.attach(
-        new AssetTransferredObserver(minter),
+        new AssetTransferredObserver(jobExecutionStore, minter),
     );
 
     downstreamAssetsTransferredMonitorMonitor.attach(
-        new AssetDownstreamObserver(upstreamTransfer, downstreamBurner),
+        new AssetDownstreamObserver(
+            jobExecutionStore,
+            upstreamTransfer,
+            downstreamBurner,
+        ),
     );
 
     const slackBot = new SlackBot(
@@ -95,8 +105,8 @@ import { Planet } from "./types/registry";
             await downstreamAccount.getAddress(),
         ),
     );
-
-    garageMonitor.attach(new GarageObserver(minter));
+    
+    garageMonitor.attach(new GarageObserver(jobExecutionStore, minter));
 
     const handleSignal = () => {
         console.log("Handle signal.");
