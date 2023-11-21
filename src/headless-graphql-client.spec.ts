@@ -6,6 +6,13 @@ import { AssetTransferredObserver } from "./observers/asset-transferred-observer
 import { GarageObserver } from "./observers/garage-observer";
 import { Signer } from "./signer";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
+import { ChatPostMessageResponse } from "@slack/web-api";
+
+const FAKE_SLACK_MESSAGE_SENDER = {
+    sendMessage() {
+        return Promise.resolve({}) as Promise<ChatPostMessageResponse>;
+    },
+};
 
 const odinClient = new HeadlessGraphQLClient(
     {
@@ -42,11 +49,11 @@ test(".getGarageUnloadEvents()", async () => {
     const account = RawPrivateKey.fromHex("");
     const signer = new Signer(account, heimdallClient);
     const minter = new Minter(signer);
-    const observer = new GarageObserver(minter);
+    const observer = new GarageObserver(FAKE_SLACK_MESSAGE_SENDER, minter);
     await observer.notify({
         blockHash: "",
         events: x.map((ev) => {
-            return { ...ev, blockHash: "" };
+            return { ...ev, blockHash: "", planetID: "" };
         }),
     });
 
@@ -63,11 +70,11 @@ test("getAssetTransferredEvents()", async () => {
     const signer = new Signer(account, heimdallClient);
     const minter = new Minter(signer);
     const stateStore = await Sqlite3MonitorStateStore.open("test");
-    const observer = new AssetTransferredObserver(minter);
+    const observer = new AssetTransferredObserver(FAKE_SLACK_MESSAGE_SENDER, minter);
     await observer.notify({
         blockHash: "",
         events: evs.map((ev) => {
-            return { ...ev, blockHash: "" };
+            return { ...ev, blockHash: "", planetID: "" };
         }),
     });
 
