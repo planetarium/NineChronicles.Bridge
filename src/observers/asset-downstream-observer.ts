@@ -56,7 +56,7 @@ export class AssetDownstreamObserver
             try {
                 this.debug("Try to burn");
                 const burnTxId = await this._burner.burn(ev.amount, ev.txId);
-                this._slackbot.sendMessage(
+                await this._slackbot.sendMessage(
                     new BridgeEvent(
                         "BURN",
                         [ev.planetID, ev.txId],
@@ -89,7 +89,7 @@ export class AssetDownstreamObserver
                     amount,
                     null,
                 );
-                this._slackbot.sendMessage(
+                await this._slackbot.sendMessage(
                     new BridgeEvent(
                         "TRANSFER",
                         [ev.planetID, ev.txId],

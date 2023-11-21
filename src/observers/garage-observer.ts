@@ -1,11 +1,11 @@
 import { IObserver } from ".";
-import { IJobExecutionStore } from "../interfaces/job-execution-store";
 import {
     IFungibleAssetValues,
     IFungibleItems,
     IMinter,
 } from "../interfaces/minter";
 import { SlackBot } from "../slack/bot";
+import { BridgeEvent } from "../slack/messages/bridge-event";
 import { BlockHash } from "../types/block-hash";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
 import { TransactionLocation } from "../types/transaction-location";
@@ -19,7 +19,6 @@ export class GarageObserver
 {
     private readonly _slackbot: SlackBot;
     private readonly _minter: IMinter;
-    private readonly jobExecutionStore: IJobExecutionStore;
 
     constructor(slackbot: SlackBot, minter: IMinter) {
         this._slackbot = slackbot;
@@ -68,18 +67,12 @@ export class GarageObserver
                     requests,
                     memoForMinter,
                 );
-                this._slackbot.sendMessage(
+                await this._slackbot.sendMessage(
                     new BridgeEvent(
                         "MINT",
                         [planetID, txId],
                         [this._minter.getMinterPlanet(), resTxId],
                     ),
-                );
-                this.jobExecutionStore.putJobExec(
-                    txId,
-                    resTxId,
-                    this._minter.getMinterPlanet(),
-                    "MINT",
                 );
             }
         }

@@ -51,7 +51,7 @@ export class AssetTransferredObserver
                 [{ recipient, amount: amountToMint }],
                 null,
             );
-            this._slackbot.sendMessage(
+            await this._slackbot.sendMessage(
                 new BridgeEvent(
                     "MINT",
                     [planetID, txId],

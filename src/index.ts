@@ -38,14 +38,6 @@ const slackBot = new SlackBot(
     const upstreamGQLClient = new HeadlessGraphQLClient(upstreamPlanet, 6);
     const downstreamGQLClient = new HeadlessGraphQLClient(downstreamPlanet, 6);
 
-    const slackBot = new SlackBot(
-        getRequiredEnv("SLACK__BOT_USERNAME"),
-        new SlackChannel(
-            getRequiredEnv("SLACK__CHANNEL"),
-            new WebClient(getRequiredEnv("SLACK__BOT_TOKEN")),
-        ),
-    );
-
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
             getRequiredEnv("MONITOR_STATE_STORE_PATH"),
