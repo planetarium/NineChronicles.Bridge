@@ -4,6 +4,7 @@ import {
     IFungibleItems,
     IMinter,
 } from "../interfaces/minter";
+import { ISlackMessageSender } from "../slack";
 import { SlackBot } from "../slack/bot";
 import { BridgeEvent } from "../slack/messages/bridge-event";
 import { BlockHash } from "../types/block-hash";
@@ -17,10 +18,10 @@ export class GarageObserver
             events: (GarageUnloadEvent & TransactionLocation)[];
         }>
 {
-    private readonly _slackbot: SlackBot;
+    private readonly _slackbot: ISlackMessageSender;
     private readonly _minter: IMinter;
 
-    constructor(slackbot: SlackBot, minter: IMinter) {
+    constructor(slackbot: ISlackMessageSender, minter: IMinter) {
         this._slackbot = slackbot;
         this._minter = minter;
     }

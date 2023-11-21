@@ -7,6 +7,7 @@ import { BridgeEvent } from "../slack/messages/bridge-event";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { BlockHash } from "../types/block-hash";
 import { TransactionLocation } from "../types/transaction-location";
+import { ISlackMessageSender } from "../slack";
 
 export class AssetDownstreamObserver
     implements
@@ -15,12 +16,12 @@ export class AssetDownstreamObserver
             events: (AssetTransferredEvent & TransactionLocation)[];
         }>
 {
-    private readonly _slackbot: SlackBot;
+    private readonly _slackbot: ISlackMessageSender;
     private readonly _transfer: IAssetTransfer;
     private readonly _burner: IAssetBurner;
 
     constructor(
-        slackbot: SlackBot,
+        slackbot: ISlackMessageSender,
         upstreamTransfer: IAssetTransfer,
         downstreamBurner: IAssetBurner,
     ) {

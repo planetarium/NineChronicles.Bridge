@@ -6,6 +6,7 @@ import { BridgeEvent } from "../slack/messages/bridge-event";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { BlockHash } from "../types/block-hash";
 import { TransactionLocation } from "../types/transaction-location";
+import { ISlackMessageSender } from "../slack";
 
 export class AssetTransferredObserver
     implements
@@ -16,8 +17,8 @@ export class AssetTransferredObserver
         }>
 {
     private readonly _minter: IMinter;
-    private readonly _slackbot: SlackBot;
-    constructor(slackbot: SlackBot, minter: IMinter) {
+    private readonly _slackbot: ISlackMessageSender;
+    constructor(slackbot: ISlackMessageSender, minter: IMinter) {
         this._slackbot = slackbot;
 
         this._minter = minter;
