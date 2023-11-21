@@ -1,4 +1,5 @@
 import { Address } from "@planetarium/account";
+import { Job } from "@prisma/client";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
 import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
@@ -7,22 +8,21 @@ import { NineChroniclesMonitor } from "./ninechronicles-block-monitor";
 
 export class AssetsTransferredMonitor extends NineChroniclesMonitor<AssetTransferredEvent> {
     private readonly _address: Address;
-    private readonly _planetID: string;
 
     constructor(
         monitorStateHandler: IMonitorStateHandler,
+        jobExecutionStore: IJobExecutionStore,
         headlessGraphQLClient: IHeadlessGraphQLClient,
         address: Address,
     ) {
-        super(monitorStateHandler, headlessGraphQLClient);
+        super(monitorStateHandler, jobExecutionStore, headlessGraphQLClient);
         this._address = address;
-        this._planetID = this._headlessGraphQLClient.getPlanetID();
     }
 
     protected async getEvents(
         blockIndex: number,
     ): Promise<(AssetTransferredEvent & TransactionLocation)[]> {
-        const planetID = this._planetID;
+        const planetID = this._headlessGraphQLClient.getPlanetID();
         const blockHash =
             await this._headlessGraphQLClient.getBlockHash(blockIndex);
         const events =
