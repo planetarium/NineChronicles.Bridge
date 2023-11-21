@@ -6,6 +6,7 @@ import { AssetTransferredObserver } from "./observers/asset-transferred-observer
 import { GarageObserver } from "./observers/garage-observer";
 import { Signer } from "./signer";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
+import { JobExecutionStore } from "./job-execution-store";
 
 const odinClient = new HeadlessGraphQLClient(
     {
@@ -60,15 +61,17 @@ test("getAssetTransferredEvents()", async () => {
     );
 
     const account = RawPrivateKey.fromHex("");
+    new jobExecutionStore = new JobExecutionStore();
     const signer = new Signer(account, heimdallClient);
     const minter = new Minter(signer);
     const stateStore = await Sqlite3MonitorStateStore.open("test");
-    const observer = new AssetTransferredObserver(minter);
+    const observer = new AssetTransferredObserver(jobExecutionStore, minter);
     await observer.notify({
         blockHash: "",
         events: evs.map((ev) => {
-            return { ...ev, blockHash: "" };
-        }),
+            return {
+                ...ev, blockHash: "", planetID: "0x100000000000",
+            }),
     });
 
     return;
