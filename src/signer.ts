@@ -5,6 +5,8 @@ import { Mutex } from "async-mutex";
 import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
 import { additionalGasTxProperties } from "./tx";
 
+const SUPER_FUTURE_DATETIME = new Date(2200, 12, 31, 23, 59, 59, 999);
+
 export class Signer {
     private readonly _client: IHeadlessGraphQLClient;
     private readonly _account: Account;
@@ -38,7 +40,7 @@ export class Signer {
                     "uncompressed",
                 ),
                 signer: address.toBytes(),
-                timestamp: new Date(),
+                timestamp: SUPER_FUTURE_DATETIME,
                 updatedAddresses: new Set([]),
                 actions: [action],
                 ...additionalGasTxProperties,
