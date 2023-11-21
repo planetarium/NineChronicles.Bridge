@@ -16,4 +16,4 @@ COPY package.json /app
 
 WORKDIR /app
 
-CMD yarn prisma migrate deploy && npx tsx ./index.js
+ENTRYPOINT [ "/usr/local/bin/node", "index.js" ]
