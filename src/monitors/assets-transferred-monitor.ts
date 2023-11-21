@@ -1,7 +1,6 @@
 import { Address } from "@planetarium/account";
 import { Job } from "@prisma/client";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
-import { IJobExecutionStore } from "../interfaces/job-execution-store";
 import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { TransactionLocation } from "../types/transaction-location";
@@ -12,11 +11,10 @@ export class AssetsTransferredMonitor extends NineChroniclesMonitor<AssetTransfe
 
     constructor(
         monitorStateHandler: IMonitorStateHandler,
-        jobExecutionStore: IJobExecutionStore,
         headlessGraphQLClient: IHeadlessGraphQLClient,
         address: Address,
     ) {
-        super(monitorStateHandler, jobExecutionStore, headlessGraphQLClient);
+        super(monitorStateHandler, headlessGraphQLClient);
         this._address = address;
     }
 

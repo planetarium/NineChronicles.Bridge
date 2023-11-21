@@ -20,14 +20,12 @@ export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
 > {
     private readonly _monitorStateHandler: IMonitorStateHandler;
     private readonly _delayMilliseconds: number;
-    protected readonly _jobExecutionStore: IJobExecutionStore;
     protected readonly _headlessGraphQLClient: IHeadlessGraphQLClient;
 
     private latestBlockNumber: number | undefined;
 
     constructor(
         monitorStateHandler: IMonitorStateHandler,
-        jobExecutionStore: IJobExecutionStore,
         headlessGraphQLClient: IHeadlessGraphQLClient,
         delayMilliseconds: number = 15 * 1000,
     ) {
@@ -35,7 +33,6 @@ export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
 
         this._monitorStateHandler = monitorStateHandler;
         this._headlessGraphQLClient = headlessGraphQLClient;
-        this._jobExecutionStore = jobExecutionStore;
         this._delayMilliseconds = delayMilliseconds;
     }
 

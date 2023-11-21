@@ -6,9 +6,7 @@ import { AssetBurner } from "./asset-burner";
 import { AssetTransfer } from "./asset-transfer";
 import { getRequiredEnv } from "./env";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
-import { IJobExecutionStore } from "./interfaces/job-execution-store";
 import { IMonitorStateStore } from "./interfaces/monitor-state-store";
-import { JobExecutionStore } from "./job-execution-store";
 import { Minter } from "./minter";
 import { getMonitorStateHandler } from "./monitor-state-handler";
 import { AssetsTransferredMonitor } from "./monitors/assets-transferred-monitor";
@@ -39,11 +37,19 @@ const slackBot = new SlackBot(
 
     const upstreamGQLClient = new HeadlessGraphQLClient(upstreamPlanet, 6);
     const downstreamGQLClient = new HeadlessGraphQLClient(downstreamPlanet, 6);
+
+    const slackBot = new SlackBot(
+        getRequiredEnv("SLACK__BOT_USERNAME"),
+        new SlackChannel(
+            getRequiredEnv("SLACK__CHANNEL"),
+            new WebClient(getRequiredEnv("SLACK__BOT_TOKEN")),
+        ),
+    );
+
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
             getRequiredEnv("MONITOR_STATE_STORE_PATH"),
         );
-    const jobExecutionStore: IJobExecutionStore = new JobExecutionStore();
 
     const upstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
@@ -51,7 +57,6 @@ const slackBot = new SlackBot(
                 monitorStateStore,
                 "upstreamAssetTransferMonitor",
             ),
-            jobExecutionStore,
             upstreamGQLClient,
             Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
         );
@@ -61,7 +66,6 @@ const slackBot = new SlackBot(
                 monitorStateStore,
                 "downstreamAssetTransferMonitor",
             ),
-            jobExecutionStore,
             downstreamGQLClient,
             Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
         );
@@ -70,7 +74,6 @@ const slackBot = new SlackBot(
             monitorStateStore,
             "upstreamGarageUnloadMonitor",
         ),
-        jobExecutionStore,
         upstreamGQLClient,
         Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
         Address.fromHex(getRequiredEnv("NC_VAULT_AVATAR_ADDRESS")),
@@ -78,6 +81,13 @@ const slackBot = new SlackBot(
 
     const upstreamAccount = getAccountFromEnv("NC_UPSTREAM");
     const downstreamAccount = getAccountFromEnv("NC_DOWNSTREAM");
+
+    await slackBot.sendMessage(
+        new AppStartEvent(
+            await upstreamAccount.getAddress(),
+            await downstreamAccount.getAddress(),
+        ),
+    );
 
     const upstreamSigner = new Signer(upstreamAccount, upstreamGQLClient);
     const downstreamSigner = new Signer(downstreamAccount, downstreamGQLClient);
@@ -88,14 +98,21 @@ const slackBot = new SlackBot(
     const downstreamBurner = new AssetBurner(downstreamSigner);
 
     upstreamAssetsTransferredMonitorMonitor.attach(
-        new AssetTransferredObserver(jobExecutionStore, minter),
+        new AssetTransferredObserver(minter),
     );
 
     downstreamAssetsTransferredMonitorMonitor.attach(
         new AssetDownstreamObserver(
-            jobExecutionStore,
             upstreamTransfer,
             downstreamBurner,
+        ),
+    );
+
+    const slackBot = new SlackBot(
+        getRequiredEnv("SLACK__BOT_USERNAME"),
+        new SlackChannel(
+            getRequiredEnv("SLACK__CHANNEL"),
+            new WebClient(getRequiredEnv("SLACK__BOT_TOKEN")),
         ),
     );
 
