@@ -1,20 +1,27 @@
 import { Account, Address } from "@planetarium/account";
-import { RecordView, encode } from "@planetarium/bencodex";
-import { encodeSignedTx, signTx } from "@planetarium/tx";
+import { RecordView } from "@planetarium/bencodex";
+import { signTx } from "@planetarium/tx";
 import { Mutex } from "async-mutex";
-import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
+import { ITxPool } from "./interfaces/txpool";
 import { additionalGasTxProperties } from "./tx";
+import { BlockHash } from "./types/block-hash";
 
 const SUPER_FUTURE_DATETIME = new Date(2200, 12, 31, 23, 59, 59, 999);
 
 export class Signer {
-    private readonly _client: IHeadlessGraphQLClient;
+    private readonly _txpool: ITxPool;
     private readonly _account: Account;
+    private readonly _genesisBlockHash: BlockHash;
     private readonly mutex: Mutex;
 
-    constructor(account: Account, client: IHeadlessGraphQLClient) {
+    constructor(
+        account: Account,
+        txpool: ITxPool,
+        genesisBlockHash: BlockHash,
+    ) {
         this._account = account;
-        this._client = client;
+        this._txpool = txpool;
+        this._genesisBlockHash = genesisBlockHash;
         this.mutex = new Mutex();
     }
 
@@ -23,19 +30,14 @@ export class Signer {
     }
 
     getSignPlanet(): string {
-        return this._client.getPlanetID();
+        return this._txpool.getPlanetID();
     }
 
     async sendTx(action: RecordView): Promise<string> {
         const address = await this._account.getAddress();
         return this.mutex.runExclusive(async () => {
-            const nonce = BigInt(
-                await this._client.getNextTxNonce(address.toHex()),
-            );
-            const genesisHash = Buffer.from(
-                await this._client.getGenesisHash(),
-                "hex",
-            );
+            const nonce = BigInt(await this._txpool.getNextTxNonce(address));
+            const genesisHash = Buffer.from(this._genesisBlockHash, "hex");
 
             const unsignedTx = {
                 nonce,
@@ -51,9 +53,7 @@ export class Signer {
             };
 
             const tx = await signTx(unsignedTx, this._account);
-            return this._client.stageTransaction(
-                Buffer.from(encode(encodeSignedTx(tx))).toString("hex"),
-            );
+            return this._txpool.stage(tx);
         });
     }
 }

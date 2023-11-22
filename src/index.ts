@@ -21,6 +21,7 @@ import { SlackChannel } from "./slack/channel";
 import { AppStartEvent } from "./slack/messages/app-start-event";
 import { AppStopEvent } from "./slack/messages/app-stop-event";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
+import { HeadlessTxPool } from "./txpool/headless";
 import { Planet } from "./types/registry";
 
 const slackBot = new SlackBot(
@@ -81,8 +82,23 @@ const slackBot = new SlackBot(
         ),
     );
 
-    const upstreamSigner = new Signer(upstreamAccount, upstreamGQLClient);
-    const downstreamSigner = new Signer(downstreamAccount, downstreamGQLClient);
+    const upstreamGenesisBlockHash = await upstreamGQLClient.getGenesisHash();
+    const downstreamGenesisBlockHash =
+        await downstreamGQLClient.getGenesisHash();
+
+    const upstreamTxpool = new HeadlessTxPool(upstreamGQLClient);
+    const downstreamTxpool = new HeadlessTxPool(downstreamGQLClient);
+
+    const upstreamSigner = new Signer(
+        upstreamAccount,
+        upstreamTxpool,
+        upstreamGenesisBlockHash,
+    );
+    const downstreamSigner = new Signer(
+        downstreamAccount,
+        downstreamTxpool,
+        downstreamGenesisBlockHash,
+    );
 
     const minter = new Minter(downstreamSigner);
 
