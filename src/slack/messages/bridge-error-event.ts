@@ -1,6 +1,6 @@
 import { ISlackMessage, SlackMessageSymbol } from ".";
 
-export class AppErrorEvent implements ISlackMessage {
+export class BridgeErrorEvent implements ISlackMessage {
     [SlackMessageSymbol] = true as const;
 
     constructor(private readonly error: Error) {}
