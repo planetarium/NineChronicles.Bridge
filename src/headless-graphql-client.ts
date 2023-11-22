@@ -127,7 +127,6 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     : {
                           txId: tx.id,
                           signer: tx.signer,
-                          timestamp: tx.timestamp,
                           fungibleAssetValues,
                           fungibleItems,
                           memo,
@@ -166,7 +165,6 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         return data.data.transaction.ncTransactions
             .map((tx) => {
                 const txId = tx.id;
-                const timestamp = tx.timestamp;
                 const action = decode(
                     Buffer.from(tx.actions[0].raw, "hex"),
                 ) as Dictionary;
@@ -193,7 +191,6 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
 
                 return {
                     txId,
-                    timestamp,
                     sender,
                     recipient,
                     amount,

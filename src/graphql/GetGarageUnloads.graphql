@@ -7,7 +7,6 @@ query GetGarageUnloads($startingBlockIndex: Long!) {
     ) {
       id
       signer
-      timestamp
       actions {
         raw
       }
