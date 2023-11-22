@@ -4,6 +4,7 @@ import { IAssetBurner } from "../interfaces/asset-burner";
 import { IAssetTransfer } from "../interfaces/asset-transfer";
 import { ISlackMessageSender } from "../slack";
 import { SlackBot } from "../slack/bot";
+import { AppErrorEvent } from "../slack/messages/app-stop-event";
 import { BridgeEvent } from "../slack/messages/bridge-event";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { BlockHash } from "../types/block-hash";
@@ -106,6 +107,7 @@ export class AssetDownstreamObserver
                 this.debug("TransferAsset TxId is", transferTxId);
             } catch (e) {
                 console.error(e);
+                this._slackbot.sendMessage(new AppErrorEvent(e));
             }
         }
     }
