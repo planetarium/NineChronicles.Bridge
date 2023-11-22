@@ -3,7 +3,7 @@ import { IObserver } from ".";
 import { IMinter } from "../interfaces/minter";
 import { ISlackMessageSender } from "../slack";
 import { SlackBot } from "../slack/bot";
-import { AppErrorEvent } from "../slack/messages/app-error-event";
+import { BridgeErrorEvent } from "../slack/messages/bridge-error-event";
 import { BridgeEvent } from "../slack/messages/bridge-event";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { BlockHash } from "../types/block-hash";
@@ -66,7 +66,9 @@ export class AssetTransferredObserver
                 );
             } catch (e) {
                 console.error(e);
-                await this._slackbot.sendMessage(new AppErrorEvent(e));
+                await this._slackbot.sendMessage(
+                    new BridgeErrorEvent([planetID, txId], e),
+                );
             }
         }
     }

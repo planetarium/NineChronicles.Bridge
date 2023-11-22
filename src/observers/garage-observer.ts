@@ -6,7 +6,7 @@ import {
 } from "../interfaces/minter";
 import { ISlackMessageSender } from "../slack";
 import { SlackBot } from "../slack/bot";
-import { AppErrorEvent } from "../slack/messages/app-error-event";
+import { BridgeErrorEvent } from "../slack/messages/bridge-error-event";
 import { BridgeEvent } from "../slack/messages/bridge-event";
 import { BlockHash } from "../types/block-hash";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
@@ -83,7 +83,9 @@ export class GarageObserver
                 }
             } catch (e) {
                 console.error(e);
-                await this._slackbot.sendMessage(new AppErrorEvent(e));
+                await this._slackbot.sendMessage(
+                    new BridgeErrorEvent([planetID, txId], e),
+                );
             }
         }
     }
