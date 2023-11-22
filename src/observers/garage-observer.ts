@@ -6,6 +6,7 @@ import {
 } from "../interfaces/minter";
 import { ISlackMessageSender } from "../slack";
 import { SlackBot } from "../slack/bot";
+import { AppErrorEvent } from "../slack/messages/app-error-event";
 import { BridgeEvent } from "../slack/messages/bridge-event";
 import { BlockHash } from "../types/block-hash";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
@@ -33,6 +34,7 @@ export class GarageObserver
         const { events } = data;
 
         for (const {
+            signer,
             blockHash,
             txId,
             planetID,
@@ -40,41 +42,48 @@ export class GarageObserver
             fungibleItems,
             memo,
         } of events) {
-            const {
-                agentAddress,
-                avatarAddress,
-                memo: memoForMinter,
-            } = parseMemo(memo);
+            try {
+                const {
+                    agentAddress,
+                    avatarAddress,
+                    memo: memoForMinter,
+                } = parseMemo(memo);
 
-            const requests: (IFungibleAssetValues | IFungibleItems)[] = [];
-            for (const fa of fungibleAssetValues) {
-                requests.push({
-                    recipient: agentAddress,
-                    amount: fa[1],
-                });
-            }
+                const requests: (IFungibleAssetValues | IFungibleItems)[] = [];
+                for (const fa of fungibleAssetValues) {
+                    requests.push({
+                        recipient: agentAddress,
+                        amount: fa[1],
+                    });
+                }
 
-            for (const fi of fungibleItems) {
-                requests.push({
-                    recipient: avatarAddress,
-                    fungibleItemId: fi[1],
-                    count: fi[2],
-                });
-            }
+                for (const fi of fungibleItems) {
+                    requests.push({
+                        recipient: avatarAddress,
+                        fungibleItemId: fi[1],
+                        count: fi[2],
+                    });
+                }
 
-            if (requests.length !== 0) {
-                const resTxId = await this._minter.mintAssets(
-                    // @ts-ignore
-                    requests,
-                    memoForMinter,
-                );
-                await this._slackbot.sendMessage(
-                    new BridgeEvent(
-                        "MINT",
-                        [planetID, txId],
-                        [this._minter.getMinterPlanet(), resTxId],
-                    ),
-                );
+                if (requests.length !== 0) {
+                    const resTxId = await this._minter.mintAssets(
+                        // @ts-ignore
+                        requests,
+                        memoForMinter,
+                    );
+                    await this._slackbot.sendMessage(
+                        new BridgeEvent(
+                            "MINT",
+                            [planetID, txId],
+                            [this._minter.getMinterPlanet(), resTxId],
+                            signer,
+                            requests.map((x) => x.recipient).join(", "),
+                        ),
+                    );
+                }
+            } catch (e) {
+                console.error(e);
+                await this._slackbot.sendMessage(new AppErrorEvent(e));
             }
         }
     }
