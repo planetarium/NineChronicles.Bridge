@@ -71,6 +71,7 @@ export class GarageObserver
                         requests,
                         memoForMinter,
                     );
+                    console.log(txId, ",", resTxId);
                     await this._slackbot.sendMessage(
                         new BridgeEvent(
                             "MINT",
@@ -82,7 +83,7 @@ export class GarageObserver
                     );
                 }
             } catch (e) {
-                console.error(e);
+                console.error("error", e);
                 await this._slackbot.sendMessage(
                     new BridgeErrorEvent([planetID, txId], e),
                 );
