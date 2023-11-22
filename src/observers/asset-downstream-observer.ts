@@ -66,7 +66,7 @@ export class AssetDownstreamObserver
                 );
                 this.debug("BurnAsset TxId is", burnTxId);
 
-                const targetAddress = Address.fromHex(ev.memo);
+                const targetAddress = Address.fromHex(ev.memo, true);
                 // FIXME: Always assume the upstream network is odin, and force modify to odin minters for NCG.
                 const amount =
                     ev.amount.currency.ticker === "NCG"
