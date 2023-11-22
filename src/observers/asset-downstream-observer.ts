@@ -107,7 +107,9 @@ export class AssetDownstreamObserver
                 this.debug("TransferAsset TxId is", transferTxId);
             } catch (e) {
                 console.error(e);
-                await this._slackbot.sendMessage(new BridgeErrorEvent(e));
+                await this._slackbot.sendMessage(
+                    new BridgeErrorEvent([ev.planetID, ev.txId], e),
+                );
             }
         }
     }

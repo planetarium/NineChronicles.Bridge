@@ -1,15 +1,23 @@
 import { ISlackMessage, SlackMessageSymbol } from ".";
+import { TxIdWithNetwork, ncscanTxLinkGetter } from "./utils";
 
 export class BridgeErrorEvent implements ISlackMessage {
     [SlackMessageSymbol] = true as const;
 
-    constructor(private readonly error: Error) {}
+    constructor(
+        private readonly tx: TxIdWithNetwork,
+        private readonly error: Error,
+    ) {}
 
     render() {
         if (this.error) {
             return {
-                text: "App caught error",
+                text: "Bridge failed",
                 attachments: [
+                    {
+                        title: "Tx",
+                        text: ncscanTxLinkGetter(this.tx),
+                    },
                     {
                         title: "Type",
                         color: "#ff0033",

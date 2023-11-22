@@ -83,7 +83,9 @@ export class GarageObserver
                 }
             } catch (e) {
                 console.error(e);
-                await this._slackbot.sendMessage(new BridgeErrorEvent(e));
+                await this._slackbot.sendMessage(
+                    new BridgeErrorEvent([planetID, txId], e),
+                );
             }
         }
     }

@@ -66,7 +66,9 @@ export class AssetTransferredObserver
                 );
             } catch (e) {
                 console.error(e);
-                await this._slackbot.sendMessage(new BridgeErrorEvent(e));
+                await this._slackbot.sendMessage(
+                    new BridgeErrorEvent([planetID, txId], e),
+                );
             }
         }
     }
