@@ -55,6 +55,8 @@ export class AssetDownstreamObserver
             }
 
             try {
+                const sender = ev.sender.toString();
+                const recipient = ev.memo.toString();
                 this.debug("Try to burn");
                 const burnTxId = await this._burner.burn(ev.amount, ev.txId);
                 await this._slackbot.sendMessage(
@@ -62,6 +64,8 @@ export class AssetDownstreamObserver
                         "BURN",
                         [ev.planetID, ev.txId],
                         [this._burner.getBurnerPlanet(), burnTxId],
+                        sender,
+                        recipient,
                     ),
                 );
                 this.debug("BurnAsset TxId is", burnTxId);
@@ -95,6 +99,8 @@ export class AssetDownstreamObserver
                         "TRANSFER",
                         [ev.planetID, ev.txId],
                         [this._transfer.getTransferPlanet(), transferTxId],
+                        sender,
+                        recipient,
                     ),
                 );
                 this.debug("TransferAsset TxId is", transferTxId);

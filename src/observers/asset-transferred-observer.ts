@@ -31,6 +31,7 @@ export class AssetTransferredObserver
         const { events } = data;
 
         for (const {
+            sender,
             blockHash,
             planetID,
             txId,
@@ -57,6 +58,8 @@ export class AssetTransferredObserver
                     "MINT",
                     [planetID, txId],
                     [this._minter.getMinterPlanet(), resTxId],
+                    sender.toString(),
+                    recipient.toString(),
                 ),
             );
         }

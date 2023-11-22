@@ -7,7 +7,9 @@ export class BridgeEvent implements ISlackMessage {
         private readonly actionType: "BURN" | "MINT" | "TRANSFER",
         private readonly requestTx: TxIdWithNetwork,
         private readonly responseTx: TxIdWithNetwork,
-    ) {}
+        private readonly sender: string,
+        private readonly recipient: string,
+    ) { }
 
     render() {
         const txLinkGetter = ncscanTxLinkGetter;
@@ -21,6 +23,10 @@ export class BridgeEvent implements ISlackMessage {
                 {
                     title: "Source - Destination",
                     text: `${this.requestTx[0]} → ${this.responseTx[0]}`,
+                },
+                {
+                    title: "Sender - Recipient"
+                    text: `${this.sender} -> ${this.recipient}`
                 },
                 {
                     title: "Request Tx",

@@ -33,6 +33,7 @@ export class GarageObserver
         const { events } = data;
 
         for (const {
+            signer,
             blockHash,
             txId,
             planetID,
@@ -73,6 +74,8 @@ export class GarageObserver
                         "MINT",
                         [planetID, txId],
                         [this._minter.getMinterPlanet(), resTxId],
+                        signer,
+                        agentAddress,
                     ),
                 );
             }
