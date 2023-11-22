@@ -20,7 +20,7 @@ export class BridgeEvent implements ISlackMessage {
             attachments: [
                 {
                     title: "Source - Destination",
-                    value: `${this.requestTx[0]} → ${this.responseTx[0]}`,
+                    text: `${this.requestTx[0]} → ${this.responseTx[0]}`,
                 },
                 {
                     title: "Request Tx",
