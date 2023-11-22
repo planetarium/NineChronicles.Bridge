@@ -15,8 +15,6 @@ import {
     StageTransactionDocument,
 } from "./generated/graphql";
 import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
-import { ISlackMessageSender } from "./slack";
-import { AppErrorEvent } from "./slack/messages/app-error-event";
 import { AssetTransferredEvent } from "./types/asset-transferred-event";
 import { BlockHash } from "./types/block-hash";
 import { GarageUnloadEvent } from "./types/garage-unload-event";
@@ -28,15 +26,9 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     private readonly _client: Client;
     private readonly _planet: Planet;
     private readonly _endpoints: string[];
-    private readonly _slackbot: ISlackMessageSender;
     private _endpointsIterator: IterableIterator<string>;
 
-    constructor(
-        planet: Planet,
-        maxRetry: number,
-        slackbot: ISlackMessageSender,
-    ) {
-        this._slackbot = slackbot;
+    constructor(planet: Planet, maxRetry: number) {
         this._planet = planet;
         this.randomSortEndpoints();
         this._endpoints = this._planet.rpcEndpoints["headless.gql"];
@@ -52,7 +44,6 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     maxNumberAttempts: maxRetry,
                     retryWith: (error, operation) => {
                         console.error(error.message);
-                        this._slackbot.sendMessage(new AppErrorEvent(error));
                         // https://formidable.com/open-source/urql/docs/basics/errors/
                         // This automatically distinguish, log, process Network / GQL error.
                         if (error.networkError) {
