@@ -77,7 +77,7 @@ export class GarageObserver
                             [planetID, txId],
                             [this._minter.getMinterPlanet(), resTxId],
                             signer,
-                            agentAddress,
+                            requests.map((x) => x.recipient).join(", "),
                         ),
                     );
                 }
