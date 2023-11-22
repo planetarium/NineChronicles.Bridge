@@ -40,7 +40,6 @@ test("notify", async () => {
                 blockHash: "xxx",
                 planetID: "odin",
                 signer: "0x0000000000000000000000000000000000000000",
-                timestamp: "2023-11-17T16:59:29.374833+00:00",
                 fungibleAssetValues: [
                     [
                         await account.getAddress(),

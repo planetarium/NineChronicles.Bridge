@@ -4,7 +4,6 @@ import { TxId } from "./txid";
 
 export interface AssetTransferredEvent {
     txId: TxId;
-    timestamp: string;
     sender: Address;
     recipient: Address;
     amount: FungibleAssetValue;

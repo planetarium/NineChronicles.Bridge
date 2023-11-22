@@ -6,7 +6,6 @@ query GetAssetTransferred($blockIndex: Long!) {
       limit: 1
     ) {
       id
-      timestamp
       actions {
         raw
       }
