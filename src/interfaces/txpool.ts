@@ -6,3 +6,8 @@ export interface ITxPool {
     getNextTxNonce(address: Address): Promise<bigint>;
     getPlanetID(): string;
 }
+
+export interface IBackgroundSyncTxpool extends ITxPool {
+    start(): void;
+    stop(): void;
+}
