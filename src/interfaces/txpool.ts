@@ -1,8 +1,8 @@
 import { Address } from "@planetarium/account";
-import { SignedTx, UnsignedTx } from "@planetarium/tx/dist/tx";
+import { SignedTx } from "../types/signed-tx";
 
 export interface ITxPool {
-    stage(tx: SignedTx<UnsignedTx>): Promise<string>;
+    stage(tx: SignedTx): Promise<string>;
     getNextTxNonce(address: Address): Promise<bigint>;
     getPlanetID(): string;
 }

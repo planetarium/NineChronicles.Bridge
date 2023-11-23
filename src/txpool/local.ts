@@ -2,18 +2,16 @@ import { existsSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { Address } from "@planetarium/account";
 import { encode } from "@planetarium/bencodex";
-import { encodeSignedTx, type signTx } from "@planetarium/tx";
+import { encodeSignedTx } from "@planetarium/tx";
 import { Mutex } from "async-mutex";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
 import {
     BackgroundSyncTxpoolSymbol,
     IBackgroundSyncTxpool,
 } from "../interfaces/txpool";
+import { SignedTx } from "../types/signed-tx";
 import { delay } from "../utils/delay";
 import { getTxId } from "../utils/tx";
-
-// FIXME: @planetarium/tx should export SignedTx
-type SignedTx = Awaited<ReturnType<typeof signTx>>;
 
 type Journal = Record<
     string, // address, lower hex
