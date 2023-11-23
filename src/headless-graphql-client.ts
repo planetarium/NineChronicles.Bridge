@@ -24,7 +24,7 @@ import { TxId } from "./types/txid";
 export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     private readonly _client: Client;
 
-    constructor(apiEndpoint: string, maxRetry: number) {
+    constructor(apiEndpoint: string) {
         this._client = new Client({
             url: apiEndpoint,
             exchanges: [
@@ -33,7 +33,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     initialDelayMs: 1000,
                     maxDelayMs: 15000,
                     randomDelay: true,
-                    maxNumberAttempts: maxRetry,
+                    maxNumberAttempts: Number.POSITIVE_INFINITY,
                     retryWith: (error, operation) => {
                         console.error(error.message);
                         // https://formidable.com/open-source/urql/docs/basics/errors/

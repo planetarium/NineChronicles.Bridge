@@ -17,11 +17,9 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 (async () => {
     const upstreamGQLClient = new HeadlessGraphQLClient(
         process.env.NC_UPSTREAM_GQL_ENDPOINT,
-        3,
     );
     const downstreamGQLClient = new HeadlessGraphQLClient(
         process.env.NC_DOWNSTREAM_GQL_ENDPOINT,
-        3,
     );
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
