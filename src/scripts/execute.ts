@@ -11,8 +11,8 @@ import { heimdallClient } from "./heimdall-client";
 import { odinClient } from "./odin-client";
 import { createDb, getAll } from "./utils";
 
-// Prcoessed by swen
 const SKIP_TXIDS = [
+    // Prcoessed by swen 20231122
     "57b66182f350c2793cd855819bba6b08e417033cdf7d95372401c87044f5ec94",
     "b8404fe8ff308ce8743ae7748f814ac18aeef592599f5e93c9969ab2e21a28f5",
     "9011cb2b21ec01d2c9fa6ea86cea87da2d05f626cf23a5f675f4c1a029caa3a2",
@@ -40,6 +40,43 @@ const SKIP_TXIDS = [
     "dcee52053275fd4eff694f90618419a2644898767fe84529a3c3a7e383da33ba",
 
     "2003e9698cb5bbb3a155e4449cbdafddd5b4546f1211025124275ecbaba22937", // MISSED, HEIMDALL's txs, it was success.
+
+    // Processed by me 20231122
+    "2d7c723abba4123a49afdbc0bfa6e65fb9305710cec825e8757d894d97161751",
+    "10580018ad0c975fa783a87e3ca7cbb654463df628f8c148e3e71f4c10f0f7e7",
+    "1c6adedaa6d7851dc2e67021ad66470b8d22cd8b51ed0daea653cb27c91673ad",
+    "496b00854a49b785ca8a276c33309c4085ab7a74d972fc7e124453def29c85ea",
+    "9457dcd8496ca17644041503107e0d952d3279475d5cc22a5709db7ebdc5706e",
+    "beade5b2b160ac4460d66aa38c39f8662a21c0c90d09a8a62751422cf882e5af",
+    "21644d1e847fd060ddbcc9495a993fc6b763015946eb471fb4d93732e22f9889",
+    "5998c41a51ed8b7caefdb22c93962800b97abf881c1c32890317b65d36d41f79",
+    "655a3281f5943d146f709657343cb586036db254f7d477af2270454a5e57d22b",
+    "3a01cd383b60271c63883d95e0da25d3bdeb715cd74f4c552643023d157dafa2",
+    "d185f67003f5895f841d8065d944a91c4ef091910eef6b01544a190b7a8e268c",
+    "7b97689bf270af67d51044376335c4f6a9c6511c646c452e324bfb42b6db03b2",
+    "b076e5e46015a07880cecb9e1e8ba02d36b53401ff239383b9c4908ff7000e88",
+    "c659b79623a123938c5301826a488ca445cd04ec5043cd8bfc8029b3aab83193",
+    "5fc8bb5bbff444651890125d0e4ab060ede91de727cbe1d2cb0dfa37d1d55708",
+    "31cb432b17ae0d858e451bf4bdf87f52e7415c5d474cc7ceffd562ce2f6979db",
+    "ddffc723f8a4dbb23d17d87a98d62d9e9c473e748e5523b4dbc53ee7c97883d6",
+
+    // Processed by me. 20231123
+    "f1e9745c350c38b379b3c95860daa9c3617fac1fc1e7d45dec6088c9de637168",
+    "60d7eb4698ae335f6831897b9073f6291c239e8902fd1000f83ed6f12edfec6f",
+    "735b351a27fb5136b17ac1c43ce8d3d5f5e2e2f8d99a505452ce520a20458fb3",
+    "a5d96bf45ce87fa9a573c83368293bbcba447853aed5c476a69794c5eccedb25",
+    "1d03bd80e8d1580c3173a7a970bab407b3649ad1d5a000550f14438a4638f440",
+    "a3ea8a5b4c12cacd73ffffffd3351fa62fd417867a1f692dc217925eea9a23ee",
+    "b59a8c3b2c69de272d947d8a3e685754d4bae6c012026911042735bbf269d39e",
+    "b258c1fec2b7dfb3af0035dc9443c04d172bd19efebeaf9a449b07e4d16de60e",
+    "485c51f15d8647bce7465bc42b89e05862e4a3c5baeab61b5ef2ef82c4f9d5f2",
+    "8e68120a864d9cd13aff152909730c10bdf032122dd3c3f95a80d012ab049695",
+    "575e0f6197ec2060b3d2ec3360e9926679f4137ca8d2d15339aba9efb375023c",
+    "14ca950575fb86c86f92e223b8d2b1569706d5cb681e8a809976b9619060e7b2",
+    "5311cdfa3238d3a059e923c1f0d26275154844b0543d4d1db5e1a8ddcc160674",
+    "e201a25d0e08e04d8bb04e059218cf349a231f8b194d358abc0e27b85db697ed",
+    "287e415f119123c1cc5ae49dbc4292cafa68c63c8765d50dadf5a029b7893a3d",
+    "6f77122f9ed907c25bc43c81046d16bfe41e3b4464fb4cc5de9389f678caca13",
 ].map((x) => x.toLowerCase());
 
 const MINTER_ACCOUNT = RawPrivateKey.fromHex(
@@ -67,6 +104,7 @@ async function main() {
         (tx) => !SKIP_TXIDS.includes(tx.requestTxId.toLowerCase()),
     );
     const filteredRequestTxIds = filteredTxs.map((x) => x.requestTxId);
+    console.log(SKIP_TXIDS.length);
     console.log(filteredTxs.length, filteredRequestTxIds);
 
     const blockIndexes = new Set<number>();
@@ -117,7 +155,7 @@ async function main() {
         console.log(blockIndex, filteredAssetEvents, filteredGarageEvents);
 
         for (const assetEvent of filteredAssetEvents) {
-            assetObserver.notify({
+            await assetObserver.notify({
                 blockHash: "",
                 events: [
                     {
@@ -130,7 +168,7 @@ async function main() {
         }
 
         for (const garageEvent of filteredGarageEvents) {
-            garageObserver.notify({
+            await garageObserver.notify({
                 blockHash: "",
                 events: [
                     {

@@ -220,9 +220,14 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     }
 
     async getTransactionResult(txId: TxId): Promise<TransactionResult> {
-        return (
-            await this._client.query(GetTransactionResultDocument, { txId })
-        ).data.transaction.transactionResult;
+        while (true) {
+            const resp = await this._client.query(GetTransactionResultDocument, { txId });
+            if (resp.error?.graphQLErrors[0]?.extensions['code'] === 'REDIS_TIMEOUT') {
+                continue;
+            }
+
+            return resp.data.transaction.transactionResult;
+        }
     }
 }
 

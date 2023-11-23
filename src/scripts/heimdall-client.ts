@@ -10,5 +10,5 @@ export const heimdallClient = new HeadlessGraphQLClient(
             "headless.grpc": [],
         },
     },
-    5,
+    20,
 );
