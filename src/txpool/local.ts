@@ -5,7 +5,10 @@ import { encode } from "@planetarium/bencodex";
 import { encodeSignedTx, type signTx } from "@planetarium/tx";
 import { Mutex } from "async-mutex";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
-import { IBackgroundSyncTxpool } from "../interfaces/txpool";
+import {
+    BackgroundSyncTxpoolSymbol,
+    IBackgroundSyncTxpool,
+} from "../interfaces/txpool";
 import { delay } from "../utils/delay";
 import { getTxId } from "../utils/tx";
 
@@ -18,6 +21,8 @@ type Journal = Record<
 >;
 
 export class LocalTxPool implements IBackgroundSyncTxpool {
+    [BackgroundSyncTxpoolSymbol] = true as const;
+
     private running: boolean;
     private readonly mutex: Mutex;
 
