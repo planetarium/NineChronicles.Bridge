@@ -4,6 +4,7 @@ import { promisify } from "node:util";
 import { WebClient } from "@slack/web-api";
 import { Database } from "sqlite3";
 import { getRequiredEnv } from "../env";
+import { request } from "node:http";
 
 const CHANNEL_NAME = getRequiredEnv("SLACK__CHANNEL");
 const webClient = new WebClient(getRequiredEnv("SLACK__BOT_TOKEN"));
@@ -37,7 +38,8 @@ async function initializeDb(db: Database) {
         requestTxId TEXT NOT NULL,
         responseTxId TEXT NOT NULL,
         responseTxStatus TEXT DEFAULT "INVALID" NOT NULL,
-        recoverTxId TEXT
+        recoverTxId TEXT,
+        UNIQUE(requestTxId, responseTxId)
     )`;
 
     return new Promise((resolve, error) => {
@@ -106,6 +108,7 @@ async function main() {
                 "INSERT INTO txs(requestTxId,responseTxId) VALUES (?,?)",
                 [requestTxId, responseTxId],
             );
+            // console.log(requestTxId, responseTxId);
         }
 
         if (!response_metadata?.next_cursor) {
