@@ -7,6 +7,7 @@ import { AssetTransfer } from "./asset-transfer";
 import { getRequiredEnv } from "./env";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
 import { IMonitorStateStore } from "./interfaces/monitor-state-store";
+import { isBackgroundSyncTxpool } from "./interfaces/txpool";
 import { Minter } from "./minter";
 import { getMonitorStateHandler } from "./monitor-state-handler";
 import { AssetsTransferredMonitor } from "./monitors/assets-transferred-monitor";
@@ -21,6 +22,7 @@ import { SlackChannel } from "./slack/channel";
 import { AppStartEvent } from "./slack/messages/app-start-event";
 import { AppStopEvent } from "./slack/messages/app-stop-event";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
+import { getTxpoolFromEnv } from "./txpool";
 import { Planet } from "./types/registry";
 
 const slackBot = new SlackBot(
@@ -81,8 +83,26 @@ const slackBot = new SlackBot(
         ),
     );
 
-    const upstreamSigner = new Signer(upstreamAccount, upstreamGQLClient);
-    const downstreamSigner = new Signer(downstreamAccount, downstreamGQLClient);
+    const upstreamGenesisBlockHash = await upstreamGQLClient.getGenesisHash();
+    const downstreamGenesisBlockHash =
+        await downstreamGQLClient.getGenesisHash();
+
+    const upstreamTxpool = getTxpoolFromEnv("NC_UPSTREAM", upstreamGQLClient);
+    const downstreamTxpool = getTxpoolFromEnv(
+        "NC_DOWNSTREAM",
+        downstreamGQLClient,
+    );
+
+    const upstreamSigner = new Signer(
+        upstreamAccount,
+        upstreamTxpool,
+        upstreamGenesisBlockHash,
+    );
+    const downstreamSigner = new Signer(
+        downstreamAccount,
+        downstreamTxpool,
+        downstreamGenesisBlockHash,
+    );
 
     const minter = new Minter(downstreamSigner);
 
@@ -110,6 +130,14 @@ const slackBot = new SlackBot(
         downstreamAssetsTransferredMonitorMonitor.stop();
         garageMonitor.stop();
 
+        if (isBackgroundSyncTxpool(upstreamTxpool)) {
+            upstreamTxpool.stop();
+        }
+
+        if (isBackgroundSyncTxpool(downstreamTxpool)) {
+            downstreamTxpool.stop();
+        }
+
         slackBot.sendMessage(new AppStopEvent());
     };
 
@@ -119,6 +147,14 @@ const slackBot = new SlackBot(
     upstreamAssetsTransferredMonitorMonitor.run();
     downstreamAssetsTransferredMonitorMonitor.run();
     garageMonitor.run();
+
+    if (isBackgroundSyncTxpool(upstreamTxpool)) {
+        upstreamTxpool.start();
+    }
+
+    if (isBackgroundSyncTxpool(downstreamTxpool)) {
+        downstreamTxpool.start();
+    }
 })().catch(async (error) => {
     console.error(error);
     await slackBot.sendMessage(new AppStopEvent(error));

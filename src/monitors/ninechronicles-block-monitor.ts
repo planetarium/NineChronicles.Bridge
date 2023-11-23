@@ -4,14 +4,7 @@ import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
 import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { BlockHash } from "../types/block-hash";
 import { TransactionLocation } from "../types/transaction-location";
-
-function delay(ms: number): Promise<void> {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve();
-        }, ms);
-    });
-}
+import { delay } from "../utils/delay";
 
 export abstract class NineChroniclesMonitor<TEventData> extends Monitor<
     TEventData & TransactionLocation
