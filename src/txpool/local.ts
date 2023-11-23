@@ -121,7 +121,7 @@ export class LocalTxPool implements IBackgroundSyncTxpool {
                 });
 
                 // Fetch txresults
-                const txsToRemove: string[] = [];
+                const txToStatus: Map<string, string> = new Map();
                 for (const address of Object.keys(journal)) {
                     const txs = journal[address];
                     for (const [nonce, tx] of txs) {
@@ -129,15 +129,11 @@ export class LocalTxPool implements IBackgroundSyncTxpool {
                         const txResult =
                             await this.client.getTransactionResult(txid);
                         debug(`${txid}'s txresult is ${txResult.txStatus}`);
+                        txToStatus.set(tx, txResult.txStatus);
                         if (
-                            txResult.txStatus === "SUCCESS" ||
-                            txResult.txStatus === "FAILURE"
+                            txResult.txStatus !== "SUCCESS" &&
+                            txResult.txStatus !== "FAILURE"
                         ) {
-                            debug(
-                                `Add ${address}/${nonce}-${txid} to the list to remove from jouranl.`,
-                            );
-                            txsToRemove.push(tx);
-                        } else {
                             debug(
                                 `${address}/${nonce}-${txid} seems not included in blocks. Stage again.`,
                             );
@@ -157,9 +153,36 @@ export class LocalTxPool implements IBackgroundSyncTxpool {
                     const newJournal: Journal = {};
 
                     for (const address of Object.keys(journal)) {
-                        newJournal[address] = journal[address].filter(
-                            ([, tx]) => !txsToRemove.includes(tx),
+                        const txs = structuredClone(journal[address]);
+
+                        // It will skip when there are only one or zero txs.
+                        if (txs.length <= 1) {
+                            debug(
+                                `Skip filtering because journal[${address}] has txs less or equal than 1.`,
+                                txs,
+                            );
+                            newJournal[address] = txs;
+                            continue;
+                        }
+
+                        // Sort acsending
+                        txs.sort(([a], [b]) => (a < b ? -1 : 1));
+
+                        const txStatuses = txs.map(([, tx]) =>
+                            txToStatus.has(tx) ? txToStatus.get(tx) : "INVALID",
                         );
+
+                        const index = txStatuses.findIndex(
+                            (txStatus) =>
+                                txStatus !== "SUCCESS" &&
+                                txStatus !== "FAILURE",
+                        );
+
+                        // If [SUCCESS, SUCCESS, FAILURE, INVALID, SUCCESS],
+                        // index will be 3 and newJournal[address] will be [INVALID, SUCCESS].
+                        // If [SUCCESS, SUCCESS],
+                        // index will be -1 and [1, 2, 3].slice(-1) == [3] (Try in Nodejs REPL)
+                        newJournal[address] = txs.slice(index);
 
                         const droppedTxsCount =
                             journal[address].length -
@@ -168,6 +191,8 @@ export class LocalTxPool implements IBackgroundSyncTxpool {
                             `Dropped ${address}'s ${droppedTxsCount} txs from journal because they are included in chain blocks.`,
                         );
 
+                        // If [SUCCESS, SUCCESS], newJournal[address] will be [SUCCESS].
+                        // In theory, you'll never get to this point, but it's there just in case.
                         // Remain latest one.
                         if (
                             newJournal[address].length === 0 &&
