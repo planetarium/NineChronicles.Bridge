@@ -37,8 +37,8 @@ const slackBot = new SlackBot(
     const [upstreamPlanet, downstreamPlanet]: Planet[] =
         await new PreloadHandler().preparePlanets();
 
-    const upstreamGQLClient = new HeadlessGraphQLClient(upstreamPlanet, 6);
-    const downstreamGQLClient = new HeadlessGraphQLClient(downstreamPlanet, 6);
+    const upstreamGQLClient = new HeadlessGraphQLClient(upstreamPlanet);
+    const downstreamGQLClient = new HeadlessGraphQLClient(downstreamPlanet);
 
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(

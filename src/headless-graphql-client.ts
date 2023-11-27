@@ -28,7 +28,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     private readonly _endpoints: string[];
     private _endpointsIterator: IterableIterator<string>;
 
-    constructor(planet: Planet, maxRetry: number) {
+    constructor(planet: Planet) {
         this._planet = planet;
         this.randomSortEndpoints();
         this._endpoints = this._planet.rpcEndpoints["headless.gql"];
@@ -41,7 +41,7 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     initialDelayMs: 1000,
                     maxDelayMs: 10000,
                     randomDelay: true,
-                    maxNumberAttempts: maxRetry,
+                    maxNumberAttempts: Number.POSITIVE_INFINITY,
                     retryWith: (error, operation) => {
                         console.error(error.message);
                         // https://formidable.com/open-source/urql/docs/basics/errors/

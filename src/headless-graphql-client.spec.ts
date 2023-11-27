@@ -15,30 +15,24 @@ const FAKE_SLACK_MESSAGE_SENDER = {
     },
 };
 
-const odinClient = new HeadlessGraphQLClient(
-    {
-        id: "0x100000000000",
-        rpcEndpoints: {
-            "headless.gql": [
-                "https://9c-internal-rpc-1.nine-chronicles.com/graphql",
-            ],
-            "headless.grpc": [],
-        },
+const odinClient = new HeadlessGraphQLClient({
+    id: "0x100000000000",
+    rpcEndpoints: {
+        "headless.gql": [
+            "https://9c-internal-rpc-1.nine-chronicles.com/graphql",
+        ],
+        "headless.grpc": [],
     },
-    1,
-);
-const heimdallClient = new HeadlessGraphQLClient(
-    {
-        id: "0x100000000001",
-        rpcEndpoints: {
-            "headless.gql": [
-                "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
-            ],
-            "headless.grpc": [],
-        },
+});
+const heimdallClient = new HeadlessGraphQLClient({
+    id: "0x100000000001",
+    rpcEndpoints: {
+        "headless.gql": [
+            "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+        ],
+        "headless.grpc": [],
     },
-    1,
-);
+});
 
 test(".getGarageUnloadEvents()", async () => {
     const x = await odinClient.getGarageUnloadEvents(
