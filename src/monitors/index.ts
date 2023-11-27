@@ -3,6 +3,7 @@ import { BlockHash } from "../types/block-hash";
 
 type IMonitorObserver<TEvent> = IObserver<{
     blockHash: BlockHash;
+    planetID: string;
     events: TEvent[];
 }>;
 
@@ -31,13 +32,25 @@ export abstract class Monitor<TEvent> {
 
     abstract loop(): AsyncIterableIterator<{
         blockHash: string;
+        planetID: string;
         events: TEvent[];
     }>;
+
+    protected isRunnning(): boolean {
+        return this.running;
+    }
 
     private async startMonitoring(): Promise<void> {
         const loop = this.loop();
         while (this.running) {
-            const { value } = await loop.next();
+            const { value, done } = await loop.next();
+
+            if (done) {
+                console.log(`${this.constructor.name}.loop() is done.`);
+                break;
+            }
+
+            console.debug("observers notify", value);
             for (const observer of this._observers.values()) {
                 await observer.notify(value);
             }

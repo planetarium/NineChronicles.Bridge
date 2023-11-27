@@ -4,7 +4,10 @@ import {
     IFungibleItems,
     IMinter,
 } from "../interfaces/minter";
-import { IMonitorStateStore } from "../interfaces/monitor-state-store";
+import { ISlackMessageSender } from "../slack";
+import { SlackBot } from "../slack/bot";
+import { BridgeErrorEvent } from "../slack/messages/bridge-error-event";
+import { BridgeEvent } from "../slack/messages/bridge-event";
 import { BlockHash } from "../types/block-hash";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
 import { TransactionLocation } from "../types/transaction-location";
@@ -16,12 +19,12 @@ export class GarageObserver
             events: (GarageUnloadEvent & TransactionLocation)[];
         }>
 {
+    private readonly _slackbot: ISlackMessageSender;
     private readonly _minter: IMinter;
-    private readonly _monitorStateStore: IMonitorStateStore;
 
-    constructor(monitorStateStore: IMonitorStateStore, minter: IMinter) {
+    constructor(slackbot: ISlackMessageSender, minter: IMinter) {
+        this._slackbot = slackbot;
         this._minter = minter;
-        this._monitorStateStore = monitorStateStore;
     }
 
     async notify(data: {
@@ -31,42 +34,58 @@ export class GarageObserver
         const { events } = data;
 
         for (const {
+            signer,
             blockHash,
             txId,
+            planetID,
             fungibleAssetValues,
             fungibleItems,
             memo,
         } of events) {
-            await this._monitorStateStore.store("nine-chronicles", {
-                blockHash,
-                txId,
-            });
+            try {
+                const {
+                    agentAddress,
+                    avatarAddress,
+                    memo: memoForMinter,
+                } = parseMemo(memo);
 
-            const {
-                agentAddress,
-                avatarAddress,
-                memo: memoForMinter,
-            } = parseMemo(memo);
+                const requests: (IFungibleAssetValues | IFungibleItems)[] = [];
+                for (const fa of fungibleAssetValues) {
+                    requests.push({
+                        recipient: agentAddress,
+                        amount: fa[1],
+                    });
+                }
 
-            const requests: (IFungibleAssetValues | IFungibleItems)[] = [];
-            for (const fa of fungibleAssetValues) {
-                requests.push({
-                    recipient: agentAddress,
-                    amount: fa[1],
-                });
-            }
+                for (const fi of fungibleItems) {
+                    requests.push({
+                        recipient: avatarAddress,
+                        fungibleItemId: fi[1],
+                        count: fi[2],
+                    });
+                }
 
-            for (const fi of fungibleItems) {
-                requests.push({
-                    recipient: avatarAddress,
-                    fungibleItemId: fi[1],
-                    count: fi[2],
-                });
-            }
-
-            if (requests.length !== 0) {
-                // @ts-ignore
-                await this._minter.mintAssets(requests, memoForMinter);
+                if (requests.length !== 0) {
+                    const resTxId = await this._minter.mintAssets(
+                        // @ts-ignore
+                        requests,
+                        memoForMinter,
+                    );
+                    await this._slackbot.sendMessage(
+                        new BridgeEvent(
+                            "MINT",
+                            [planetID, txId],
+                            [this._minter.getMinterPlanet(), resTxId],
+                            signer,
+                            requests.map((x) => x.recipient).join(", "),
+                        ),
+                    );
+                }
+            } catch (e) {
+                console.error(e);
+                await this._slackbot.sendMessage(
+                    new BridgeErrorEvent([planetID, txId], e),
+                );
             }
         }
     }

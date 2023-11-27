@@ -16,6 +16,7 @@ export interface IFungibleItems {
 
 export interface IMinter {
     getMinterAddress(): Promise<Address>;
+    getMinterPlanet(): string;
 
     mintAssets(
         assets: [IFungibleAssetValues | IFungibleItems],

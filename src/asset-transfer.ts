@@ -15,6 +15,9 @@ export class AssetTransfer implements IAssetTransfer {
     constructor(signer: Signer) {
         this.signer = signer;
     }
+    getTransferPlanet(): string {
+        return this.signer.getSignPlanet();
+    }
 
     async transfer(
         recipient: Address,

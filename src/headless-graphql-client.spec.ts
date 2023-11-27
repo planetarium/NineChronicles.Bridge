@@ -1,18 +1,42 @@
 import test from "node:test";
 import { Address, RawPrivateKey } from "@planetarium/account";
+import { ChatPostMessageResponse } from "@slack/web-api";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
 import { Minter } from "./minter";
 import { AssetTransferredObserver } from "./observers/asset-transferred-observer";
 import { GarageObserver } from "./observers/garage-observer";
 import { Signer } from "./signer";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
+import { HeadlessTxPool } from "./txpool/headless";
+
+const FAKE_SLACK_MESSAGE_SENDER = {
+    sendMessage() {
+        return Promise.resolve({}) as Promise<ChatPostMessageResponse>;
+    },
+};
 
 const odinClient = new HeadlessGraphQLClient(
-    "https://9c-internal-rpc-1.nine-chronicles.com/graphql",
+    {
+        id: "0x100000000000",
+        rpcEndpoints: {
+            "headless.gql": [
+                "https://9c-internal-rpc-1.nine-chronicles.com/graphql",
+            ],
+            "headless.grpc": [],
+        },
+    },
     1,
 );
 const heimdallClient = new HeadlessGraphQLClient(
-    "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+    {
+        id: "0x100000000001",
+        rpcEndpoints: {
+            "headless.gql": [
+                "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+            ],
+            "headless.grpc": [],
+        },
+    },
     1,
 );
 
@@ -24,13 +48,17 @@ test(".getGarageUnloadEvents()", async () => {
     );
     const monitorStateStore = await Sqlite3MonitorStateStore.open("test");
     const account = RawPrivateKey.fromHex("");
-    const signer = new Signer(account, heimdallClient);
+    const signer = new Signer(
+        account,
+        new HeadlessTxPool(heimdallClient),
+        await heimdallClient.getGenesisHash(),
+    );
     const minter = new Minter(signer);
-    const observer = new GarageObserver(monitorStateStore, minter);
+    const observer = new GarageObserver(FAKE_SLACK_MESSAGE_SENDER, minter);
     await observer.notify({
         blockHash: "",
         events: x.map((ev) => {
-            return { ...ev, blockHash: "" };
+            return { ...ev, blockHash: "", planetID: "" };
         }),
     });
 
@@ -44,14 +72,21 @@ test("getAssetTransferredEvents()", async () => {
     );
 
     const account = RawPrivateKey.fromHex("");
-    const signer = new Signer(account, heimdallClient);
+    const signer = new Signer(
+        account,
+        new HeadlessTxPool(heimdallClient),
+        await heimdallClient.getGenesisHash(),
+    );
     const minter = new Minter(signer);
     const stateStore = await Sqlite3MonitorStateStore.open("test");
-    const observer = new AssetTransferredObserver(stateStore, minter);
+    const observer = new AssetTransferredObserver(
+        FAKE_SLACK_MESSAGE_SENDER,
+        minter,
+    );
     await observer.notify({
         blockHash: "",
         events: evs.map((ev) => {
-            return { ...ev, blockHash: "" };
+            return { ...ev, blockHash: "", planetID: "" };
         }),
     });
 

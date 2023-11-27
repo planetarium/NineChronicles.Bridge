@@ -2,6 +2,10 @@ import { Address } from "@planetarium/account";
 import { IObserver } from ".";
 import { IAssetBurner } from "../interfaces/asset-burner";
 import { IAssetTransfer } from "../interfaces/asset-transfer";
+import { ISlackMessageSender } from "../slack";
+import { SlackBot } from "../slack/bot";
+import { BridgeErrorEvent } from "../slack/messages/bridge-error-event";
+import { BridgeEvent } from "../slack/messages/bridge-event";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { BlockHash } from "../types/block-hash";
 import { TransactionLocation } from "../types/transaction-location";
@@ -13,13 +17,16 @@ export class AssetDownstreamObserver
             events: (AssetTransferredEvent & TransactionLocation)[];
         }>
 {
+    private readonly _slackbot: ISlackMessageSender;
     private readonly _transfer: IAssetTransfer;
     private readonly _burner: IAssetBurner;
 
     constructor(
+        slackbot: ISlackMessageSender,
         upstreamTransfer: IAssetTransfer,
         downstreamBurner: IAssetBurner,
     ) {
+        this._slackbot = slackbot;
         this._transfer = upstreamTransfer;
         this._burner = downstreamBurner;
     }
@@ -49,11 +56,22 @@ export class AssetDownstreamObserver
             }
 
             try {
+                const sender = ev.sender.toString();
+                const recipient = ev.memo.toString();
                 this.debug("Try to burn");
                 const burnTxId = await this._burner.burn(ev.amount, ev.txId);
+                await this._slackbot.sendMessage(
+                    new BridgeEvent(
+                        "BURN",
+                        [ev.planetID, ev.txId],
+                        [this._burner.getBurnerPlanet(), burnTxId],
+                        sender,
+                        recipient,
+                    ),
+                );
                 this.debug("BurnAsset TxId is", burnTxId);
 
-                const targetAddress = Address.fromHex(ev.memo);
+                const targetAddress = Address.fromHex(ev.memo, true);
                 // FIXME: Always assume the upstream network is odin, and force modify to odin minters for NCG.
                 const amount =
                     ev.amount.currency.ticker === "NCG"
@@ -77,9 +95,21 @@ export class AssetDownstreamObserver
                     amount,
                     null,
                 );
+                await this._slackbot.sendMessage(
+                    new BridgeEvent(
+                        "TRANSFER",
+                        [ev.planetID, ev.txId],
+                        [this._transfer.getTransferPlanet(), transferTxId],
+                        sender,
+                        recipient,
+                    ),
+                );
                 this.debug("TransferAsset TxId is", transferTxId);
             } catch (e) {
                 console.error(e);
+                await this._slackbot.sendMessage(
+                    new BridgeErrorEvent([ev.planetID, ev.txId], e),
+                );
             }
         }
     }

@@ -5,15 +5,26 @@ import Decimal from "decimal.js";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
 import { Minter } from "./minter";
 import { Signer } from "./signer";
+import { HeadlessTxPool } from "./txpool/headless";
 
 test("mint fav", async () => {
     const account = RawPrivateKey.fromHex("");
+    const headlessClient = new HeadlessGraphQLClient(
+        {
+            id: "0x100000000000",
+            rpcEndpoints: {
+                "headless.gql": [
+                    "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+                ],
+                "headless.grpc": [],
+            },
+        },
+        1,
+    );
     const signer = new Signer(
         account,
-        new HeadlessGraphQLClient(
-            "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
-            1,
-        ),
+        new HeadlessTxPool(headlessClient),
+        await headlessClient.getGenesisHash(),
     );
 
     const minter = new Minter(signer);
@@ -41,12 +52,22 @@ test("mint fav", async () => {
 
 test("mint fis", async () => {
     const account = RawPrivateKey.fromHex("");
+    const headlessClient = new HeadlessGraphQLClient(
+        {
+            id: "0x100000000000",
+            rpcEndpoints: {
+                "headless.gql": [
+                    "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+                ],
+                "headless.grpc": [],
+            },
+        },
+        1,
+    );
     const signer = new Signer(
         account,
-        new HeadlessGraphQLClient(
-            "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
-            1,
-        ),
+        new HeadlessTxPool(headlessClient),
+        await headlessClient.getGenesisHash(),
     );
 
     const minter = new Minter(signer);

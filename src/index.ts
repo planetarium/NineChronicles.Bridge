@@ -1,66 +1,108 @@
 import { Address, RawPrivateKey } from "@planetarium/account";
+import { WebClient } from "@slack/web-api";
 import "dotenv/config";
+import { getAccountFromEnv } from "./accounts";
 import { AssetBurner } from "./asset-burner";
 import { AssetTransfer } from "./asset-transfer";
+import { getRequiredEnv } from "./env";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
 import { IMonitorStateStore } from "./interfaces/monitor-state-store";
+import { isBackgroundSyncTxpool } from "./interfaces/txpool";
 import { Minter } from "./minter";
+import { getMonitorStateHandler } from "./monitor-state-handler";
 import { AssetsTransferredMonitor } from "./monitors/assets-transferred-monitor";
 import { GarageUnloadMonitor } from "./monitors/garage-unload-monitor";
 import { AssetDownstreamObserver } from "./observers/asset-downstream-observer";
 import { AssetTransferredObserver } from "./observers/asset-transferred-observer";
 import { GarageObserver } from "./observers/garage-observer";
-import { ShutdownHandler } from "./shutdown-handler";
+import { PreloadHandler } from "./preload-handler";
 import { Signer } from "./signer";
+import { SlackBot } from "./slack/bot";
+import { SlackChannel } from "./slack/channel";
+import { AppStartEvent } from "./slack/messages/app-start-event";
+import { AppStopEvent } from "./slack/messages/app-stop-event";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
+import { getTxpoolFromEnv } from "./txpool";
+import { Planet } from "./types/registry";
+
+const slackBot = new SlackBot(
+    getRequiredEnv("SLACK__BOT_USERNAME"),
+    new SlackChannel(
+        getRequiredEnv("SLACK__CHANNEL"),
+        new WebClient(getRequiredEnv("SLACK__BOT_TOKEN")),
+    ),
+);
 
 (async () => {
-    const upstreamGQLClient = new HeadlessGraphQLClient(
-        process.env.NC_UPSTREAM_GQL_ENDPOINT,
-    );
-    const downstreamGQLClient = new HeadlessGraphQLClient(
-        process.env.NC_DOWNSTREAM_GQL_ENDPOINT,
-    );
+    const [upstreamPlanet, downstreamPlanet]: Planet[] =
+        await new PreloadHandler().preparePlanets();
+
+    const upstreamGQLClient = new HeadlessGraphQLClient(upstreamPlanet);
+    const downstreamGQLClient = new HeadlessGraphQLClient(downstreamPlanet);
+
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
-            process.env.MONITOR_STATE_STORE_PATH,
+            getRequiredEnv("MONITOR_STATE_STORE_PATH"),
         );
-
-    const shutdownHandler = new ShutdownHandler();
-    process.on("SIGTERM", () => shutdownHandler.shutdown());
-    process.on("SIGINT", () => shutdownHandler.shutdown());
 
     const upstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
-            await monitorStateStore.load("nineChronicles"),
-            shutdownHandler,
+            getMonitorStateHandler(
+                monitorStateStore,
+                "upstreamAssetTransferMonitor",
+            ),
             upstreamGQLClient,
-            Address.fromHex(process.env.NC_VAULT_ADDRESS),
+            Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
         );
     const downstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
-            await monitorStateStore.load("nineChronicles"),
-            shutdownHandler,
+            getMonitorStateHandler(
+                monitorStateStore,
+                "downstreamAssetTransferMonitor",
+            ),
             downstreamGQLClient,
-            Address.fromHex(process.env.NC_VAULT_ADDRESS),
+            Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
         );
     const garageMonitor = new GarageUnloadMonitor(
-        await monitorStateStore.load("nineChronicles"),
-        shutdownHandler,
+        getMonitorStateHandler(
+            monitorStateStore,
+            "upstreamGarageUnloadMonitor",
+        ),
         upstreamGQLClient,
-        Address.fromHex(process.env.NC_VAULT_ADDRESS),
-        Address.fromHex(process.env.NC_VAULT_AVATAR_ADDRESS),
+        Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
+        Address.fromHex(getRequiredEnv("NC_VAULT_AVATAR_ADDRESS")),
     );
 
-    const upstreamAccount = RawPrivateKey.fromHex(
-        process.env.NC_UPSTREAM_PRIVATE_KEY,
-    );
-    const downstreamAccount = RawPrivateKey.fromHex(
-        process.env.NC_DOWNSTREAM_PRIVATE_KEY,
+    const upstreamAccount = getAccountFromEnv("NC_UPSTREAM");
+    const downstreamAccount = getAccountFromEnv("NC_DOWNSTREAM");
+
+    await slackBot.sendMessage(
+        new AppStartEvent(
+            await upstreamAccount.getAddress(),
+            await downstreamAccount.getAddress(),
+        ),
     );
 
-    const upstreamSigner = new Signer(upstreamAccount, upstreamGQLClient);
-    const downstreamSigner = new Signer(downstreamAccount, downstreamGQLClient);
+    const upstreamGenesisBlockHash = await upstreamGQLClient.getGenesisHash();
+    const downstreamGenesisBlockHash =
+        await downstreamGQLClient.getGenesisHash();
+
+    const upstreamTxpool = getTxpoolFromEnv("NC_UPSTREAM", upstreamGQLClient);
+    const downstreamTxpool = getTxpoolFromEnv(
+        "NC_DOWNSTREAM",
+        downstreamGQLClient,
+    );
+
+    const upstreamSigner = new Signer(
+        upstreamAccount,
+        upstreamTxpool,
+        upstreamGenesisBlockHash,
+    );
+    const downstreamSigner = new Signer(
+        downstreamAccount,
+        downstreamTxpool,
+        downstreamGenesisBlockHash,
+    );
 
     const minter = new Minter(downstreamSigner);
 
@@ -68,19 +110,53 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
     const downstreamBurner = new AssetBurner(downstreamSigner);
 
     upstreamAssetsTransferredMonitorMonitor.attach(
-        new AssetTransferredObserver(monitorStateStore, minter),
+        new AssetTransferredObserver(slackBot, minter),
     );
 
     downstreamAssetsTransferredMonitorMonitor.attach(
-        new AssetDownstreamObserver(upstreamTransfer, downstreamBurner),
+        new AssetDownstreamObserver(
+            slackBot,
+            upstreamTransfer,
+            downstreamBurner,
+        ),
     );
 
-    garageMonitor.attach(new GarageObserver(monitorStateStore, minter));
+    garageMonitor.attach(new GarageObserver(slackBot, minter));
+
+    const handleSignal = () => {
+        console.log("Handle signal.");
+
+        upstreamAssetsTransferredMonitorMonitor.stop();
+        downstreamAssetsTransferredMonitorMonitor.stop();
+        garageMonitor.stop();
+
+        if (isBackgroundSyncTxpool(upstreamTxpool)) {
+            upstreamTxpool.stop();
+        }
+
+        if (isBackgroundSyncTxpool(downstreamTxpool)) {
+            downstreamTxpool.stop();
+        }
+
+        slackBot.sendMessage(new AppStopEvent());
+    };
+
+    process.on("SIGTERM", handleSignal);
+    process.on("SIGINT", handleSignal);
 
     upstreamAssetsTransferredMonitorMonitor.run();
     downstreamAssetsTransferredMonitorMonitor.run();
     garageMonitor.run();
-})().catch((error) => {
+
+    if (isBackgroundSyncTxpool(upstreamTxpool)) {
+        upstreamTxpool.start();
+    }
+
+    if (isBackgroundSyncTxpool(downstreamTxpool)) {
+        downstreamTxpool.start();
+    }
+})().catch(async (error) => {
     console.error(error);
+    await slackBot.sendMessage(new AppStopEvent(error));
     process.exit(-1);
 });

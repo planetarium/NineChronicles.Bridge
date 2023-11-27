@@ -1,7 +1,7 @@
 import { Address } from "@planetarium/account";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
+import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
-import { ShutdownChecker } from "../types/shutdown-checker";
 import { TransactionLocation } from "../types/transaction-location";
 import { NineChroniclesMonitor } from "./ninechronicles-block-monitor";
 
@@ -9,22 +9,18 @@ export class AssetsTransferredMonitor extends NineChroniclesMonitor<AssetTransfe
     private readonly _address: Address;
 
     constructor(
-        latestTransactionLocation: TransactionLocation | null,
-        shutdownChecker: ShutdownChecker,
+        monitorStateHandler: IMonitorStateHandler,
         headlessGraphQLClient: IHeadlessGraphQLClient,
         address: Address,
     ) {
-        super(
-            latestTransactionLocation,
-            shutdownChecker,
-            headlessGraphQLClient,
-        );
+        super(monitorStateHandler, headlessGraphQLClient);
         this._address = address;
     }
 
     protected async getEvents(
         blockIndex: number,
     ): Promise<(AssetTransferredEvent & TransactionLocation)[]> {
+        const planetID = this._headlessGraphQLClient.getPlanetID();
         const blockHash =
             await this._headlessGraphQLClient.getBlockHash(blockIndex);
         const events =
@@ -45,7 +41,7 @@ export class AssetsTransferredMonitor extends NineChroniclesMonitor<AssetTransfe
         }
 
         return successEvents.map((ev) => {
-            return { blockHash, ...ev };
+            return { blockHash, planetID, ...ev };
         });
     }
 }

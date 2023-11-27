@@ -1,7 +1,10 @@
 import { FungibleAssetValue } from "@planetarium/tx";
 import { IObserver } from ".";
 import { IMinter } from "../interfaces/minter";
-import { IMonitorStateStore } from "../interfaces/monitor-state-store";
+import { ISlackMessageSender } from "../slack";
+import { SlackBot } from "../slack/bot";
+import { BridgeErrorEvent } from "../slack/messages/bridge-error-event";
+import { BridgeEvent } from "../slack/messages/bridge-event";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { BlockHash } from "../types/block-hash";
 import { TransactionLocation } from "../types/transaction-location";
@@ -10,14 +13,15 @@ export class AssetTransferredObserver
     implements
         IObserver<{
             blockHash: BlockHash;
+            planetID: string;
             events: (AssetTransferredEvent & TransactionLocation)[];
         }>
 {
-    private readonly _monitorStateStore: IMonitorStateStore;
     private readonly _minter: IMinter;
+    private readonly _slackbot: ISlackMessageSender;
+    constructor(slackbot: ISlackMessageSender, minter: IMinter) {
+        this._slackbot = slackbot;
 
-    constructor(monitorStateStore: IMonitorStateStore, minter: IMinter) {
-        this._monitorStateStore = monitorStateStore;
         this._minter = minter;
     }
 
@@ -27,27 +31,45 @@ export class AssetTransferredObserver
     }): Promise<void> {
         const { events } = data;
 
-        for (const { blockHash, txId, amount, memo: recipient } of events) {
-            await this._monitorStateStore.store("nine-chronicles", {
-                blockHash,
-                txId,
-            });
-
+        for (const {
+            sender,
+            blockHash,
+            planetID,
+            txId,
+            amount,
+            memo: recipient,
+        } of events) {
             // TODO check memo & refund if needed.
 
-            // Strip minters to mint well.
-            const amountToMint: FungibleAssetValue = {
-                currency: {
-                    ...amount.currency,
-                    minters: null,
-                },
-                rawValue: amount.rawValue,
-            };
+            try {
+                // Strip minters to mint well.
+                const amountToMint: FungibleAssetValue = {
+                    currency: {
+                        ...amount.currency,
+                        minters: null,
+                    },
+                    rawValue: amount.rawValue,
+                };
 
-            await this._minter.mintAssets(
-                [{ recipient, amount: amountToMint }],
-                null,
-            );
+                const resTxId = await this._minter.mintAssets(
+                    [{ recipient, amount: amountToMint }],
+                    null,
+                );
+                await this._slackbot.sendMessage(
+                    new BridgeEvent(
+                        "MINT",
+                        [planetID, txId],
+                        [this._minter.getMinterPlanet(), resTxId],
+                        sender.toString(),
+                        recipient.toString(),
+                    ),
+                );
+            } catch (e) {
+                console.error(e);
+                await this._slackbot.sendMessage(
+                    new BridgeErrorEvent([planetID, txId], e),
+                );
+            }
         }
     }
 }
