@@ -1,0 +1,72 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RequestType {
+  UNLOAD_FROM_MY_GARAGES
+  TRANSFER_ASSET
+}
+
+enum RequestCategory {
+  PROCESS
+  REFUND
+  IGNORE
+}
+
+enum ResponseType {
+  MINT_ASSETS
+  TRANSFER_ASSET
+  BURN_ASSET
+}
+
+enum TxResult {
+  INVALID
+  STAGING
+  SUCCESS
+  FAILURE
+}
+
+model Network {
+  id                   String                @id
+  genesisHash          String
+  requestTransactions  RequestTransaction[]
+  responseTransactions ResponseTransaction[]
+}
+
+model RequestTransaction {
+  id       String          @id
+  category RequestCategory
+  type     RequestType
+
+  networkId String
+  network   Network @relation(fields: [networkId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  executions ResponseTransaction[]
+}
+
+model ResponseTransaction {
+  id    String @unique
+  nonce BigInt
+  raw   Bytes
+
+  lastStatus      TxResult?
+  statusUpdatedAt DateTime  @default(now()) @updatedAt
+
+  networkId String
+  network   Network @relation(fields: [networkId], references: [id])
+
+  requestTransactionId String
+  RequestTransaction   RequestTransaction @relation(fields: [requestTransactionId], references: [id])
+
+  @@id([nonce, networkId])
+}
