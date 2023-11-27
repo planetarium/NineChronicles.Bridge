@@ -9,18 +9,15 @@ import { HeadlessTxPool } from "./txpool/headless";
 
 test("mint fav", async () => {
     const account = RawPrivateKey.fromHex("");
-    const headlessClient = new HeadlessGraphQLClient(
-        {
-            id: "0x100000000000",
-            rpcEndpoints: {
-                "headless.gql": [
-                    "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
-                ],
-                "headless.grpc": [],
-            },
+    const headlessClient = new HeadlessGraphQLClient({
+        id: "0x100000000000",
+        rpcEndpoints: {
+            "headless.gql": [
+                "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+            ],
+            "headless.grpc": [],
         },
-        1,
-    );
+    });
     const signer = new Signer(
         account,
         new HeadlessTxPool(headlessClient),
@@ -52,18 +49,15 @@ test("mint fav", async () => {
 
 test("mint fis", async () => {
     const account = RawPrivateKey.fromHex("");
-    const headlessClient = new HeadlessGraphQLClient(
-        {
-            id: "0x100000000000",
-            rpcEndpoints: {
-                "headless.gql": [
-                    "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
-                ],
-                "headless.grpc": [],
-            },
+    const headlessClient = new HeadlessGraphQLClient({
+        id: "0x100000000000",
+        rpcEndpoints: {
+            "headless.gql": [
+                "https://heimdall-internal-rpc-1.nine-chronicles.com/graphql",
+            ],
+            "headless.grpc": [],
         },
-        1,
-    );
+    });
     const signer = new Signer(
         account,
         new HeadlessTxPool(headlessClient),

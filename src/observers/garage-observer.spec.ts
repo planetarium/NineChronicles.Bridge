@@ -17,18 +17,15 @@ const FAKE_SLACK_MESSAGE_SENDER = {
 test("notify", async () => {
     const monitorStateStore = await Sqlite3MonitorStateStore.open("test");
     const account = RawPrivateKey.fromHex("");
-    const headlessClient = new HeadlessGraphQLClient(
-        {
-            id: "0x100000000000",
-            rpcEndpoints: {
-                "headless.gql": [
-                    "https://9c-internal-rpc-1.nine-chronicles.com/graphql",
-                ],
-                "headless.grpc": [],
-            },
+    const headlessClient = new HeadlessGraphQLClient({
+        id: "0x100000000000",
+        rpcEndpoints: {
+            "headless.gql": [
+                "https://9c-internal-rpc-1.nine-chronicles.com/graphql",
+            ],
+            "headless.grpc": [],
         },
-        1,
-    );
+    });
     const signer = new Signer(
         account,
         new HeadlessTxPool(headlessClient),
