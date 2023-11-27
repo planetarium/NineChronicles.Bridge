@@ -23,28 +23,40 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
     protected async getEvents(
         blockIndex: number,
     ): Promise<(GarageUnloadEvent & TransactionLocation)[]> {
-        const planetID = this._headlessGraphQLClient.getPlanetID();
-        const blockHash =
-            await this._headlessGraphQLClient.getBlockHash(blockIndex);
-        const events = await this._headlessGraphQLClient.getGarageUnloadEvents(
-            blockIndex,
+        return getGarageUnloadEvents(
+            this._headlessGraphQLClient,
             this._agentAddress,
             this._avatarAddress,
+            blockIndex,
         );
-
-        const successEvents: GarageUnloadEvent[] = [];
-        for (const event of events) {
-            const { txStatus } =
-                await this._headlessGraphQLClient.getTransactionResult(
-                    event.txId,
-                );
-            if (txStatus === "SUCCESS") {
-                successEvents.push(event);
-            }
-        }
-
-        return successEvents.map((ev) => {
-            return { blockHash, planetID, ...ev };
-        });
     }
+}
+
+export async function getGarageUnloadEvents(
+    headlessGraphQLClient: IHeadlessGraphQLClient,
+    agentAddress: Address,
+    avatarAddress: Address,
+    blockIndex: number,
+) {
+    const planetID = headlessGraphQLClient.getPlanetID();
+    const blockHash = await headlessGraphQLClient.getBlockHash(blockIndex);
+    const events = await headlessGraphQLClient.getGarageUnloadEvents(
+        blockIndex,
+        agentAddress,
+        avatarAddress,
+    );
+
+    const successEvents: GarageUnloadEvent[] = [];
+    for (const event of events) {
+        const { txStatus } = await headlessGraphQLClient.getTransactionResult(
+            event.txId,
+        );
+        if (txStatus === "SUCCESS") {
+            successEvents.push(event);
+        }
+    }
+
+    return successEvents.map((ev) => {
+        return { blockHash, planetID, ...ev };
+    });
 }
