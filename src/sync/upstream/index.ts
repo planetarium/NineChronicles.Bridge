@@ -32,6 +32,17 @@ export async function processUpstreamEvents(
             defaultStartBlockIndex,
         );
 
+            const tipIndex = await upstreamGQLClient.getTipIndex();
+
+            if (nextBlockIndex >= tipIndex) {
+                console.debug(
+                    "[sync][upstream] skip. nextBlockIndex / tipIndex",
+                    nextBlockIndex,
+                    tipIndex,
+                );
+                return;
+            }
+
         await tx.block.create({
             data: {
                 networkId: upstreamGQLClient.getPlanetID(),
