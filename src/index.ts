@@ -27,6 +27,7 @@ import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
 import { processDownstreamEvents } from "./sync/downstream";
 import { Processor } from "./sync/processor";
 import { stageTransactionFromDB } from "./sync/stage";
+import { updateTxStatuses } from "./sync/txresult";
 import { processUpstreamEvents } from "./sync/upstream";
 import { getTxpoolFromEnv } from "./txpool";
 import { Planet } from "./types/registry";
@@ -227,7 +228,13 @@ async function withRDB(
     await createNetworkIfNotExist(client, upstreamGQLClient);
     await createNetworkIfNotExist(client, downstreamGQLClient);
 
+    const headlessGQLClientsMap = {
+        [upstreamGQLClient.getPlanetID()]: upstreamGQLClient,
+        [downstreamGQLClient.getPlanetID()]: downstreamGQLClient,
+    };
+
     const processor = new Processor([
+        async () => await updateTxStatuses(client, headlessGQLClientsMap),
         async () =>
             await processDownstreamEvents(
                 upstreamAccount,
