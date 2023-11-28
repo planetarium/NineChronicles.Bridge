@@ -222,6 +222,34 @@ async function withRDB(
     const client = new PrismaClient();
     await client.$connect();
 
+    if (
+        !(await client.network.findUnique({
+            where: {
+                id: upstreamGQLClient.getPlanetID(),
+            },
+        }))
+    ) {
+        await client.network.create({
+            data: {
+                id: upstreamGQLClient.getPlanetID(),
+            },
+        });
+    }
+
+    if (
+        !(await client.network.findUnique({
+            where: {
+                id: downstreamGQLClient.getPlanetID(),
+            },
+        }))
+    ) {
+        await client.network.create({
+            data: {
+                id: downstreamGQLClient.getPlanetID(),
+            },
+        });
+    }
+
     const processor = new Processor([
         async () =>
             await processDownstreamEvents(
