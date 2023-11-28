@@ -1,12 +1,10 @@
 import { Account, Address } from "@planetarium/account";
 import { RecordView } from "@planetarium/bencodex";
-import { signTx } from "@planetarium/tx";
+import { UnsignedTx, signTx } from "@planetarium/tx";
 import { Mutex } from "async-mutex";
 import { ITxPool } from "./interfaces/txpool";
-import { additionalGasTxProperties } from "./tx";
+import { SUPER_FUTURE_DATETIME, additionalGasTxProperties } from "./tx";
 import { BlockHash } from "./types/block-hash";
-
-const SUPER_FUTURE_DATETIME = new Date(2200, 12, 31, 23, 59, 59, 999);
 
 export class Signer {
     private readonly _txpool: ITxPool;

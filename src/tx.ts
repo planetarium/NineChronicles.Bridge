@@ -13,3 +13,5 @@ export const additionalGasTxProperties = {
     },
     gasLimit: 4n,
 };
+
+export const SUPER_FUTURE_DATETIME = new Date(2200, 12, 31, 23, 59, 59, 999);
