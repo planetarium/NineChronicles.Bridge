@@ -285,8 +285,14 @@ async function withRDB(
             ),
     ]);
 
-    process.on("SIGTERM", processor.stop);
-    process.on("SIGINT", processor.stop);
+    process.on("SIGTERM", async () => {
+        console.log("SIGTERM handler called.");
+        await processor.stop();
+    });
+    process.on("SIGINT", async () => {
+        console.log("SIGINT handler called.");
+        await processor.stop();
+    });
 
     await processor.start();
 }
