@@ -19,14 +19,7 @@ export class Minter implements IMinter {
         assets: [IFungibleAssetValues | IFungibleItems],
         memo: string | null,
     ): Promise<string> {
-        const action = new RecordView(
-            {
-                type_id: "mint_assets",
-                values: [memo, ...assets.map(encodeMintSpec)],
-            },
-            "text",
-        );
-
+        const action = encodeMintAssetsAction(assets, memo);
         return await this.signer.sendTx(action);
     }
 
@@ -55,4 +48,17 @@ function encodeMintSpec(value: IFungibleAssetValues | IFungibleItems): Value {
             [Buffer.from(fis.fungibleItemId, "hex"), BigInt(fis.count)],
         ];
     }
+}
+
+export function encodeMintAssetsAction(
+    assets: (IFungibleAssetValues | IFungibleItems)[],
+    memo: string | null,
+): RecordView {
+    return new RecordView(
+        {
+            type_id: "mint_assets",
+            values: [memo, ...assets.map(encodeMintSpec)],
+        },
+        "text",
+    );
 }

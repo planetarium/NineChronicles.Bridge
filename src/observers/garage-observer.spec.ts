@@ -63,10 +63,11 @@ test("notify", async () => {
                     ],
                 ],
                 txId: "",
-                memo: JSON.stringify([
-                    "0x019101FEec7ed4f918D396827E1277DEda1e20D4",
-                    "0x37fd092455B529cFAE3Bf3b58201cE029231cDBe",
-                ]),
+                parsedMemo: {
+                    agentAddress: "0x019101FEec7ed4f918D396827E1277DEda1e20D4",
+                    avatarAddress: "0x37fd092455B529cFAE3Bf3b58201cE029231cDBe",
+                    memo: "",
+                },
             },
         ],
     });

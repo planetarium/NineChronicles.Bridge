@@ -20,28 +20,37 @@ export class AssetsTransferredMonitor extends NineChroniclesMonitor<AssetTransfe
     protected async getEvents(
         blockIndex: number,
     ): Promise<(AssetTransferredEvent & TransactionLocation)[]> {
-        const planetID = this._headlessGraphQLClient.getPlanetID();
-        const blockHash =
-            await this._headlessGraphQLClient.getBlockHash(blockIndex);
-        const events =
-            await this._headlessGraphQLClient.getAssetTransferredEvents(
-                blockIndex,
-                this._address,
-            );
-
-        const successEvents: AssetTransferredEvent[] = [];
-        for (const event of events) {
-            const { txStatus } =
-                await this._headlessGraphQLClient.getTransactionResult(
-                    event.txId,
-                );
-            if (txStatus === "SUCCESS") {
-                successEvents.push(event);
-            }
-        }
-
-        return successEvents.map((ev) => {
-            return { blockHash, planetID, ...ev };
-        });
+        return getAssetTransferredEvents(
+            this._headlessGraphQLClient,
+            this._address,
+            blockIndex,
+        );
     }
+}
+
+export async function getAssetTransferredEvents(
+    headlessGraphQLClient: IHeadlessGraphQLClient,
+    recipient: Address,
+    blockIndex: number,
+): Promise<(AssetTransferredEvent & TransactionLocation)[]> {
+    const planetID = headlessGraphQLClient.getPlanetID();
+    const blockHash = await headlessGraphQLClient.getBlockHash(blockIndex);
+    const events = await headlessGraphQLClient.getAssetTransferredEvents(
+        blockIndex,
+        recipient,
+    );
+
+    const successEvents: AssetTransferredEvent[] = [];
+    for (const event of events) {
+        const { txStatus } = await headlessGraphQLClient.getTransactionResult(
+            event.txId,
+        );
+        if (txStatus === "SUCCESS") {
+            successEvents.push(event);
+        }
+    }
+
+    return successEvents.map((ev) => {
+        return { blockHash, planetID, ...ev };
+    });
 }

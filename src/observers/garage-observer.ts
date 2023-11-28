@@ -4,6 +4,7 @@ import {
     IFungibleItems,
     IMinter,
 } from "../interfaces/minter";
+import { ValidatedGarageUnloadEvent } from "../monitors/garage-unload-monitor";
 import { ISlackMessageSender } from "../slack";
 import { SlackBot } from "../slack/bot";
 import { BridgeErrorEvent } from "../slack/messages/bridge-error-event";
@@ -16,7 +17,7 @@ export class GarageObserver
     implements
         IObserver<{
             blockHash: BlockHash;
-            events: (GarageUnloadEvent & TransactionLocation)[];
+            events: (ValidatedGarageUnloadEvent & TransactionLocation)[];
         }>
 {
     private readonly _slackbot: ISlackMessageSender;
@@ -29,7 +30,7 @@ export class GarageObserver
 
     async notify(data: {
         blockHash: BlockHash;
-        events: (GarageUnloadEvent & TransactionLocation)[];
+        events: (ValidatedGarageUnloadEvent & TransactionLocation)[];
     }): Promise<void> {
         const { events } = data;
 
@@ -40,15 +41,9 @@ export class GarageObserver
             planetID,
             fungibleAssetValues,
             fungibleItems,
-            memo,
+            parsedMemo: { agentAddress, avatarAddress, memo: memoForMinter },
         } of events) {
             try {
-                const {
-                    agentAddress,
-                    avatarAddress,
-                    memo: memoForMinter,
-                } = parseMemo(memo);
-
                 const requests: (IFungibleAssetValues | IFungibleItems)[] = [];
                 for (const fa of fungibleAssetValues) {
                     requests.push({
@@ -89,17 +84,4 @@ export class GarageObserver
             }
         }
     }
-}
-function parseMemo(memo: string): {
-    agentAddress: string;
-    avatarAddress: string;
-    memo: string;
-} {
-    const parsed = JSON.parse(memo);
-
-    return {
-        agentAddress: parsed[0],
-        avatarAddress: parsed[1],
-        memo: parsed[2],
-    };
 }

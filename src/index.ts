@@ -1,11 +1,13 @@
-import { Address, RawPrivateKey } from "@planetarium/account";
+import { Account, Address, RawPrivateKey } from "@planetarium/account";
+import { PrismaClient } from "@prisma/client";
 import { WebClient } from "@slack/web-api";
 import "dotenv/config";
 import { getAccountFromEnv } from "./accounts";
 import { AssetBurner } from "./asset-burner";
 import { AssetTransfer } from "./asset-transfer";
-import { getRequiredEnv } from "./env";
+import { getEnv, getRequiredEnv } from "./env";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
+import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
 import { IMonitorStateStore } from "./interfaces/monitor-state-store";
 import { isBackgroundSyncTxpool } from "./interfaces/txpool";
 import { Minter } from "./minter";
@@ -22,6 +24,11 @@ import { SlackChannel } from "./slack/channel";
 import { AppStartEvent } from "./slack/messages/app-start-event";
 import { AppStopEvent } from "./slack/messages/app-stop-event";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
+import { processDownstreamEvents } from "./sync/downstream";
+import { Processor } from "./sync/processor";
+import { stageTransactionFromDB } from "./sync/stage";
+import { updateTxStatuses } from "./sync/txresult";
+import { processUpstreamEvents } from "./sync/upstream";
 import { getTxpoolFromEnv } from "./txpool";
 import { Planet } from "./types/registry";
 
@@ -40,6 +47,58 @@ const slackBot = new SlackBot(
     const upstreamGQLClient = new HeadlessGraphQLClient(upstreamPlanet);
     const downstreamGQLClient = new HeadlessGraphQLClient(downstreamPlanet);
 
+    const upstreamAccount = getAccountFromEnv("NC_UPSTREAM");
+    const downstreamAccount = getAccountFromEnv("NC_DOWNSTREAM");
+
+    await slackBot.sendMessage(
+        new AppStartEvent(
+            await upstreamAccount.getAddress(),
+            await downstreamAccount.getAddress(),
+        ),
+    );
+
+    const agentAddress = Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS"));
+    const avatarAddress = Address.fromHex(
+        getRequiredEnv("NC_VAULT_AVATAR_ADDRESS"),
+    );
+
+    const useRDB = getEnv("USE_RDB");
+    if (useRDB?.toLowerCase() === "true") {
+        await withRDB(
+            upstreamGQLClient,
+            downstreamGQLClient,
+            upstreamAccount,
+            downstreamAccount,
+            agentAddress,
+            avatarAddress,
+            slackBot,
+        );
+    } else {
+        await withMonitors(
+            upstreamGQLClient,
+            downstreamGQLClient,
+            upstreamAccount,
+            downstreamAccount,
+            agentAddress,
+            avatarAddress,
+            slackBot,
+        );
+    }
+})().catch(async (error) => {
+    console.error(error);
+    await slackBot.sendMessage(new AppStopEvent(error));
+    process.exit(-1);
+});
+
+async function withMonitors(
+    upstreamGQLClient: IHeadlessGraphQLClient,
+    downstreamGQLClient: IHeadlessGraphQLClient,
+    upstreamAccount: Account,
+    downstreamAccount: Account,
+    agentAddress: Address,
+    avatarAddress: Address,
+    slackBot: SlackBot,
+) {
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
             getRequiredEnv("MONITOR_STATE_STORE_PATH"),
@@ -52,7 +111,7 @@ const slackBot = new SlackBot(
                 "upstreamAssetTransferMonitor",
             ),
             upstreamGQLClient,
-            Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
+            agentAddress,
         );
     const downstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
@@ -61,7 +120,7 @@ const slackBot = new SlackBot(
                 "downstreamAssetTransferMonitor",
             ),
             downstreamGQLClient,
-            Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
+            agentAddress,
         );
     const garageMonitor = new GarageUnloadMonitor(
         getMonitorStateHandler(
@@ -69,18 +128,8 @@ const slackBot = new SlackBot(
             "upstreamGarageUnloadMonitor",
         ),
         upstreamGQLClient,
-        Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
-        Address.fromHex(getRequiredEnv("NC_VAULT_AVATAR_ADDRESS")),
-    );
-
-    const upstreamAccount = getAccountFromEnv("NC_UPSTREAM");
-    const downstreamAccount = getAccountFromEnv("NC_DOWNSTREAM");
-
-    await slackBot.sendMessage(
-        new AppStartEvent(
-            await upstreamAccount.getAddress(),
-            await downstreamAccount.getAddress(),
-        ),
+        agentAddress,
+        avatarAddress,
     );
 
     const upstreamGenesisBlockHash = await upstreamGQLClient.getGenesisHash();
@@ -155,8 +204,100 @@ const slackBot = new SlackBot(
     if (isBackgroundSyncTxpool(downstreamTxpool)) {
         downstreamTxpool.start();
     }
-})().catch(async (error) => {
-    console.error(error);
-    await slackBot.sendMessage(new AppStopEvent(error));
-    process.exit(-1);
-});
+}
+
+async function withRDB(
+    upstreamGQLClient: IHeadlessGraphQLClient,
+    downstreamGQLClient: IHeadlessGraphQLClient,
+    upstreamAccount: Account,
+    downstreamAccount: Account,
+    agentAddress: Address,
+    avatarAddress: Address,
+    slackBot: SlackBot,
+) {
+    const upstreamStartBlockIndex = BigInt(
+        getRequiredEnv("NC_UPSTREAM__RDB__START_BLOCK_INDEX"),
+    );
+    const downstreamStartBlockIndex = BigInt(
+        getRequiredEnv("NC_DOWNSTREAM__RDB__START_BLOCK_INDEX"),
+    );
+
+    const client = new PrismaClient();
+    await client.$connect();
+
+    await createNetworkIfNotExist(client, upstreamGQLClient);
+    await createNetworkIfNotExist(client, downstreamGQLClient);
+
+    const headlessGQLClientsMap = {
+        [upstreamGQLClient.getPlanetID()]: upstreamGQLClient,
+        [downstreamGQLClient.getPlanetID()]: downstreamGQLClient,
+    };
+
+    const processor = new Processor([
+        async () => await updateTxStatuses(client, headlessGQLClientsMap),
+        async () =>
+            await processDownstreamEvents(
+                upstreamAccount,
+                downstreamAccount,
+                client,
+                upstreamGQLClient,
+                downstreamGQLClient,
+                agentAddress,
+                downstreamStartBlockIndex,
+            ),
+        async () =>
+            await processUpstreamEvents(
+                downstreamAccount,
+                client,
+                upstreamGQLClient,
+                downstreamGQLClient,
+                agentAddress,
+                avatarAddress,
+                upstreamStartBlockIndex,
+            ),
+        async () =>
+            await stageTransactionFromDB(
+                upstreamAccount,
+                client,
+                upstreamGQLClient,
+            ),
+        async () =>
+            await stageTransactionFromDB(
+                downstreamAccount,
+                client,
+                downstreamGQLClient,
+            ),
+    ]);
+
+    function makeShutdownHandler(signal: string): () => Promise<void> {
+        return async () => {
+            console.log(signal, "handler called.");
+            await processor.stop();
+            await slackBot.sendMessage(new AppStopEvent());
+        };
+    }
+
+    process.on("SIGTERM", makeShutdownHandler("SIGTERM"));
+    process.on("SIGINT", makeShutdownHandler("SIGINT"));
+
+    await processor.start();
+}
+
+async function createNetworkIfNotExist(
+    client: PrismaClient,
+    headlessGQLClient: IHeadlessGraphQLClient,
+) {
+    if (
+        !(await client.network.findUnique({
+            where: {
+                id: headlessGQLClient.getPlanetID(),
+            },
+        }))
+    ) {
+        await client.network.create({
+            data: {
+                id: headlessGQLClient.getPlanetID(),
+            },
+        });
+    }
+}

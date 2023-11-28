@@ -52,7 +52,16 @@ test(".getGarageUnloadEvents()", async () => {
     await observer.notify({
         blockHash: "",
         events: x.map((ev) => {
-            return { ...ev, blockHash: "", planetID: "" };
+            return {
+                ...ev,
+                blockHash: "",
+                planetID: "",
+                parsedMemo: {
+                    agentAddress: "FIXME",
+                    avatarAddress: "FIXME",
+                    memo: "",
+                },
+            };
         }),
     });
 

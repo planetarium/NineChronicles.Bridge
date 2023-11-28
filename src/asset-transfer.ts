@@ -24,21 +24,35 @@ export class AssetTransfer implements IAssetTransfer {
         amount: FungibleAssetValue,
         memo: string,
     ): Promise<string> {
-        const sender = (await this.signer.getAddress()).toBytes();
-        const action = new RecordView(
-            {
-                type_id: "transfer_asset5",
-                values: {
-                    // `encodeFungibleAssetValue()` wasn't exported properly.
-                    amount: [encodeCurrency(amount.currency), amount.rawValue],
-                    ...(memo === null ? {} : { memo }),
-                    recipient: Buffer.from(recipient.toBytes()),
-                    sender: Buffer.from(sender),
-                },
-            },
-            "text",
+        const sender = await this.signer.getAddress();
+        const action = encodeTransferAssetAction(
+            recipient,
+            sender,
+            amount,
+            memo,
         );
 
         return await this.signer.sendTx(action);
     }
+}
+
+export function encodeTransferAssetAction(
+    recipient: Address,
+    sender: Address,
+    amount: FungibleAssetValue,
+    memo: string,
+) {
+    return new RecordView(
+        {
+            type_id: "transfer_asset5",
+            values: {
+                // `encodeFungibleAssetValue()` wasn't exported properly.
+                amount: [encodeCurrency(amount.currency), amount.rawValue],
+                ...(memo === null ? {} : { memo }),
+                recipient: Buffer.from(recipient.toBytes()),
+                sender: Buffer.from(sender.toBytes()),
+            },
+        },
+        "text",
+    );
 }
