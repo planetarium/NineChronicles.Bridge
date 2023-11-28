@@ -28,12 +28,13 @@ export async function processDownstreamEvents(
         "hex",
     );
 
-    await client.$transaction(async (tx) => {
-        const nextBlockIndex = await getNextBlockIndex(
-            tx,
+    await client.$transaction(
+        async (tx) => {
+            const nextBlockIndex = await getNextBlockIndex(
+                tx,
                 downstreamNetworkId,
-            defaultStartBlockIndex,
-        );
+                defaultStartBlockIndex,
+            );
 
             const tipIndex = await downstreamGQLClient.getTipIndex();
 
@@ -46,77 +47,124 @@ export async function processDownstreamEvents(
                 return;
             }
 
-        await tx.block.create({
-            data: {
-                networkId: upstreamGQLClient.getPlanetID(),
-                index: nextBlockIndex,
-            },
-        });
+            console.debug("[sync][downstream] nextBlockIndex", nextBlockIndex);
+            console.log(
+                "[sync][downstream] networkId",
+                downstreamGQLClient.getPlanetID(),
+            );
 
-        const transferAssetEvents = await getAssetTransferredEvents(
-            upstreamGQLClient,
-            agentAddress,
-            Number(nextBlockIndex),
-        );
+            await tx.block.create({
+                data: {
+                    networkId: downstreamGQLClient.getPlanetID(),
+                    index: nextBlockIndex,
+                },
+            });
 
-        await tx.requestTransaction.createMany({
-            data: [
-                ...transferAssetEvents.map((ev) => {
-                    return {
-                        blockIndex: nextBlockIndex,
-                        networkId: downstreamNetworkId,
-                        type: RequestType.TRANSFER_ASSET,
-                        category: RequestCategory.PROCESS,
-                        id: ev.txId,
-                    };
-                }),
-            ],
-        });
+            console.debug("[sync][downstream] block row created.");
 
-        const upstreamNextTxNonce = await getNextTxNonce(
-            tx,
-            upstreamGQLClient,
-            upstreamAccount,
-        );
-        const downstreamNextTxNonce = await getNextTxNonce(
-            tx,
-            downstreamGQLClient,
-            downstreamAccount,
-        );
+            const transferAssetEvents = await getAssetTransferredEvents(
+                upstreamGQLClient,
+                agentAddress,
+                Number(nextBlockIndex),
+            );
 
-        const responseTransactions = [
-            ...(await responseTransactionsFromTransferEvents(
+            console.debug(
+                "[sync][downstream] transferAssetEvents.length",
+                transferAssetEvents.length,
+            );
+            console.debug(
+                "[sync][downstream] transferAssetEvents",
                 transferAssetEvents,
-                {
-                    account: upstreamAccount,
-                    networkId: upstreamNetworkId,
-                    genesisHash: upstreamGenesisHash,
-                    startNonce: upstreamNextTxNonce,
-                },
-                {
-                    account: downstreamAccount,
-                    networkId: downstreamNetworkId,
-                    genesisHash: downstreamGenesisHash,
-                    startNonce: downstreamNextTxNonce,
-                },
-            )),
-        ];
+            );
 
-        await tx.responseTransaction.createMany({
-            data: responseTransactions.map(
-                ({ signedTx, requestTxId, type, networkId }) => {
-                    const serializedTx = encode(encodeSignedTx(signedTx));
-                    const txid = getTxId(serializedTx);
-                    return {
-                        id: txid,
-                        nonce: signedTx.nonce,
-                        raw: Buffer.from(serializedTx),
-                        type,
-                        networkId,
-                        requestTransactionId: requestTxId,
-                    };
-                },
-            ),
-        });
-    });
+            await tx.requestTransaction.createMany({
+                data: [
+                    ...transferAssetEvents.map((ev) => {
+                        return {
+                            blockIndex: nextBlockIndex,
+                            networkId: downstreamNetworkId,
+                            type: RequestType.TRANSFER_ASSET,
+                            category: RequestCategory.PROCESS,
+                            id: ev.txId,
+                        };
+                    }),
+                ],
+            });
+
+            console.debug(
+                "[sync][downstream] request transaction rows created.",
+            );
+
+            const upstreamNextTxNonce = await getNextTxNonce(
+                tx,
+                upstreamGQLClient,
+                upstreamAccount,
+            );
+            const downstreamNextTxNonce = await getNextTxNonce(
+                tx,
+                downstreamGQLClient,
+                downstreamAccount,
+            );
+
+            console.debug(
+                "[sync][downstream] upstreamNextTxNonce",
+                upstreamNextTxNonce,
+            );
+            console.debug(
+                "[sync][downstream] downstreamNextTxNonce",
+                downstreamNextTxNonce,
+            );
+
+            const responseTransactions = [
+                ...(await responseTransactionsFromTransferEvents(
+                    transferAssetEvents,
+                    {
+                        account: upstreamAccount,
+                        networkId: upstreamNetworkId,
+                        genesisHash: upstreamGenesisHash,
+                        startNonce: upstreamNextTxNonce,
+                    },
+                    {
+                        account: downstreamAccount,
+                        networkId: downstreamNetworkId,
+                        genesisHash: downstreamGenesisHash,
+                        startNonce: downstreamNextTxNonce,
+                    },
+                )),
+            ];
+
+            console.debug(
+                "[sync][downstream] responseTransactions.length",
+                responseTransactions.length,
+            );
+            console.debug(
+                "[sync][downstream] responseTransactions",
+                responseTransactions,
+            );
+
+            await tx.responseTransaction.createMany({
+                data: responseTransactions.map(
+                    ({ signedTx, requestTxId, type, networkId }) => {
+                        const serializedTx = encode(encodeSignedTx(signedTx));
+                        const txid = getTxId(serializedTx);
+                        return {
+                            id: txid,
+                            nonce: signedTx.nonce,
+                            raw: Buffer.from(serializedTx),
+                            type,
+                            networkId,
+                            requestTransactionId: requestTxId,
+                        };
+                    },
+                ),
+            });
+
+            console.debug(
+                "[sync][downstream] response transaction rows created.",
+            );
+        },
+        {
+            timeout: 60 * 1000,
+        },
+    );
 }
