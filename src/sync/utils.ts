@@ -30,16 +30,24 @@ export async function getNextTxNonce(
 
 export async function getNextBlockIndex(
     tx: PrismaTransactionClient,
+    networkId: string,
     defaultStartBlockIndex: bigint,
 ): Promise<bigint> {
     const block = await tx.block.findFirst({
         select: {
             index: true,
         },
+        where: {
+            networkId,
+        },
         orderBy: {
             index: "desc",
         },
     });
 
-    return block === undefined ? defaultStartBlockIndex : block.index;
+    if (block) {
+        return block.index + 1n;
+    }
+
+    return defaultStartBlockIndex;
 }

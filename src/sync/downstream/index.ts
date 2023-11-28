@@ -31,6 +31,7 @@ export async function processDownstreamEvents(
     await client.$transaction(async (tx) => {
         const nextBlockIndex = await getNextBlockIndex(
             tx,
+                downstreamNetworkId,
             defaultStartBlockIndex,
         );
 
