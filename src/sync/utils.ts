@@ -21,13 +21,11 @@ export async function getNextTxNonce(
         },
     });
 
-    if (lastTx !== undefined) {
+    if (lastTx) {
         return lastTx.nonce + 1n;
     }
 
-    return BigInt(
-        (await headlessGQLClient.getNextTxNonce(address.toHex())) - 1,
-    );
+    return BigInt(await headlessGQLClient.getNextTxNonce(address.toHex()));
 }
 
 export async function getNextBlockIndex(
