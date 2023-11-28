@@ -70,6 +70,7 @@ const slackBot = new SlackBot(
             downstreamAccount,
             agentAddress,
             avatarAddress,
+            slackBot,
         );
     } else {
         await withMonitors(
@@ -211,6 +212,7 @@ async function withRDB(
     downstreamAccount: Account,
     agentAddress: Address,
     avatarAddress: Address,
+    slackBot: SlackBot,
 ) {
     const upstreamStartBlockIndex = BigInt(
         getRequiredEnv("NC_UPSTREAM__RDB__START_BLOCK_INDEX"),
@@ -285,14 +287,16 @@ async function withRDB(
             ),
     ]);
 
-    process.on("SIGTERM", async () => {
-        console.log("SIGTERM handler called.");
-        await processor.stop();
-    });
-    process.on("SIGINT", async () => {
-        console.log("SIGINT handler called.");
-        await processor.stop();
-    });
+    function makeShutdownHandler(signal: string): () => Promise<void> {
+        return async () => {
+            console.log(signal, "handler called.");
+            await processor.stop();
+            await slackBot.sendMessage(new AppStopEvent());
+        };
+    }
+
+    process.on("SIGTERM", makeShutdownHandler("SIGTERM"));
+    process.on("SIGINT", makeShutdownHandler("SIGINT"));
 
     await processor.start();
 }
