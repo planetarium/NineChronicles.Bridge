@@ -1,10 +1,11 @@
 import { Account, Address, RawPrivateKey } from "@planetarium/account";
+import { PrismaClient } from "@prisma/client";
 import { WebClient } from "@slack/web-api";
 import "dotenv/config";
 import { getAccountFromEnv } from "./accounts";
 import { AssetBurner } from "./asset-burner";
 import { AssetTransfer } from "./asset-transfer";
-import { getRequiredEnv } from "./env";
+import { getEnv, getRequiredEnv } from "./env";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
 import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
 import { IMonitorStateStore } from "./interfaces/monitor-state-store";
@@ -23,6 +24,10 @@ import { SlackChannel } from "./slack/channel";
 import { AppStartEvent } from "./slack/messages/app-start-event";
 import { AppStopEvent } from "./slack/messages/app-stop-event";
 import { Sqlite3MonitorStateStore } from "./sqlite3-monitor-state-store";
+import { processDownstreamEvents } from "./sync/downstream";
+import { Processor } from "./sync/processor";
+import { stageTransactionFromDB } from "./sync/stage";
+import { processUpstreamEvents } from "./sync/upstream";
 import { getTxpoolFromEnv } from "./txpool";
 import { Planet } from "./types/registry";
 
@@ -51,13 +56,32 @@ const slackBot = new SlackBot(
         ),
     );
 
-    await withMonitors(
-        upstreamGQLClient,
-        downstreamGQLClient,
-        upstreamAccount,
-        downstreamAccount,
-        slackBot,
+    const agentAddress = Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS"));
+    const avatarAddress = Address.fromHex(
+        getRequiredEnv("NC_VAULT_AVATAR_ADDRESS"),
     );
+
+    const useRDB = getEnv("USE_RDB");
+    if (useRDB?.toLowerCase() === "true") {
+        await withRDB(
+            upstreamGQLClient,
+            downstreamGQLClient,
+            upstreamAccount,
+            downstreamAccount,
+            agentAddress,
+            avatarAddress,
+        );
+    } else {
+        await withMonitors(
+            upstreamGQLClient,
+            downstreamGQLClient,
+            upstreamAccount,
+            downstreamAccount,
+            agentAddress,
+            avatarAddress,
+            slackBot,
+        );
+    }
 })().catch(async (error) => {
     console.error(error);
     await slackBot.sendMessage(new AppStopEvent(error));
@@ -69,6 +93,8 @@ async function withMonitors(
     downstreamGQLClient: IHeadlessGraphQLClient,
     upstreamAccount: Account,
     downstreamAccount: Account,
+    agentAddress: Address,
+    avatarAddress: Address,
     slackBot: SlackBot,
 ) {
     const monitorStateStore: IMonitorStateStore =
@@ -83,7 +109,7 @@ async function withMonitors(
                 "upstreamAssetTransferMonitor",
             ),
             upstreamGQLClient,
-            Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
+            agentAddress,
         );
     const downstreamAssetsTransferredMonitorMonitor =
         new AssetsTransferredMonitor(
@@ -92,7 +118,7 @@ async function withMonitors(
                 "downstreamAssetTransferMonitor",
             ),
             downstreamGQLClient,
-            Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
+            agentAddress,
         );
     const garageMonitor = new GarageUnloadMonitor(
         getMonitorStateHandler(
@@ -100,8 +126,8 @@ async function withMonitors(
             "upstreamGarageUnloadMonitor",
         ),
         upstreamGQLClient,
-        Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
-        Address.fromHex(getRequiredEnv("NC_VAULT_AVATAR_ADDRESS")),
+        agentAddress,
+        avatarAddress,
     );
 
     const upstreamGenesisBlockHash = await upstreamGQLClient.getGenesisHash();
@@ -176,4 +202,63 @@ async function withMonitors(
     if (isBackgroundSyncTxpool(downstreamTxpool)) {
         downstreamTxpool.start();
     }
+}
+
+async function withRDB(
+    upstreamGQLClient: IHeadlessGraphQLClient,
+    downstreamGQLClient: IHeadlessGraphQLClient,
+    upstreamAccount: Account,
+    downstreamAccount: Account,
+    agentAddress: Address,
+    avatarAddress: Address,
+) {
+    const upstreamStartBlockIndex = BigInt(
+        getRequiredEnv("NC_UPSTREAM__RDB__START_BLOCK_INDEX"),
+    );
+    const downstreamStartBlockIndex = BigInt(
+        getRequiredEnv("NC_DOWNSTREAM__RDB__START_BLOCK_INDEX"),
+    );
+
+    const client = new PrismaClient();
+    await client.$connect();
+
+    const processor = new Processor([
+        async () =>
+            await processDownstreamEvents(
+                upstreamAccount,
+                downstreamAccount,
+                client,
+                upstreamGQLClient,
+                downstreamGQLClient,
+                agentAddress,
+                downstreamStartBlockIndex,
+            ),
+        async () =>
+            await processUpstreamEvents(
+                downstreamAccount,
+                client,
+                upstreamGQLClient,
+                downstreamGQLClient,
+                agentAddress,
+                avatarAddress,
+                upstreamStartBlockIndex,
+            ),
+        async () =>
+            await stageTransactionFromDB(
+                upstreamAccount,
+                client,
+                upstreamGQLClient,
+            ),
+        async () =>
+            await stageTransactionFromDB(
+                downstreamAccount,
+                client,
+                downstreamGQLClient,
+            ),
+    ]);
+
+    process.on("SIGTERM", processor.stop);
+    process.on("SIGINT", processor.stop);
+
+    await processor.start();
 }
