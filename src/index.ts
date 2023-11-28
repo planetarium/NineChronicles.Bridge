@@ -224,33 +224,8 @@ async function withRDB(
     const client = new PrismaClient();
     await client.$connect();
 
-    if (
-        !(await client.network.findUnique({
-            where: {
-                id: upstreamGQLClient.getPlanetID(),
-            },
-        }))
-    ) {
-        await client.network.create({
-            data: {
-                id: upstreamGQLClient.getPlanetID(),
-            },
-        });
-    }
-
-    if (
-        !(await client.network.findUnique({
-            where: {
-                id: downstreamGQLClient.getPlanetID(),
-            },
-        }))
-    ) {
-        await client.network.create({
-            data: {
-                id: downstreamGQLClient.getPlanetID(),
-            },
-        });
-    }
+    await createNetworkIfNotExist(client, upstreamGQLClient);
+    await createNetworkIfNotExist(client, downstreamGQLClient);
 
     const processor = new Processor([
         async () =>
@@ -299,4 +274,23 @@ async function withRDB(
     process.on("SIGINT", makeShutdownHandler("SIGINT"));
 
     await processor.start();
+}
+
+async function createNetworkIfNotExist(
+    client: PrismaClient,
+    headlessGQLClient: IHeadlessGraphQLClient,
+) {
+    if (
+        !(await client.network.findUnique({
+            where: {
+                id: headlessGQLClient.getPlanetID(),
+            },
+        }))
+    ) {
+        await client.network.create({
+            data: {
+                id: headlessGQLClient.getPlanetID(),
+            },
+        });
+    }
 }
