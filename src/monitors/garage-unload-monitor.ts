@@ -5,7 +5,15 @@ import { GarageUnloadEvent } from "../types/garage-unload-event";
 import { TransactionLocation } from "../types/transaction-location";
 import { NineChroniclesMonitor } from "./ninechronicles-block-monitor";
 
-export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent> {
+export type ValidatedGarageUnloadEvent = Omit<GarageUnloadEvent, "memo"> & {
+    parsedMemo: {
+        agentAddress: string;
+        avatarAddress: string;
+        memo: string;
+    };
+};
+
+export class GarageUnloadMonitor extends NineChroniclesMonitor<ValidatedGarageUnloadEvent> {
     private readonly _agentAddress: Address;
     private readonly _avatarAddress: Address;
 
@@ -22,7 +30,7 @@ export class GarageUnloadMonitor extends NineChroniclesMonitor<GarageUnloadEvent
 
     protected async getEvents(
         blockIndex: number,
-    ): Promise<(GarageUnloadEvent & TransactionLocation)[]> {
+    ): Promise<(ValidatedGarageUnloadEvent & TransactionLocation)[]> {
         return getGarageUnloadEvents(
             this._headlessGraphQLClient,
             this._agentAddress,
@@ -46,17 +54,48 @@ export async function getGarageUnloadEvents(
         avatarAddress,
     );
 
-    const successEvents: GarageUnloadEvent[] = [];
+    const successEvents: ValidatedGarageUnloadEvent[] = [];
     for (const event of events) {
         const { txStatus } = await headlessGraphQLClient.getTransactionResult(
             event.txId,
         );
-        if (txStatus === "SUCCESS") {
-            successEvents.push(event);
+        if (txStatus !== "SUCCESS") {
+            continue;
         }
+
+        let parsedMemo = null;
+        try {
+            parsedMemo = parseMemo(event.memo);
+        } catch (e) {
+            console.error(
+                `Skip ${event.txId} because failed to parse`,
+                event.memo,
+                e,
+            );
+            continue;
+        }
+
+        successEvents.push({
+            ...event,
+            parsedMemo,
+        });
     }
 
     return successEvents.map((ev) => {
         return { blockHash, planetID, ...ev };
     });
+}
+
+function parseMemo(memo: string): {
+    agentAddress: string;
+    avatarAddress: string;
+    memo: string;
+} {
+    const parsed = JSON.parse(memo);
+
+    return {
+        agentAddress: parsed[0],
+        avatarAddress: parsed[1],
+        memo: parsed[2],
+    };
 }
