@@ -1,4 +1,4 @@
-import { Address, RawPrivateKey } from "@planetarium/account";
+import { Account, Address, RawPrivateKey } from "@planetarium/account";
 import { WebClient } from "@slack/web-api";
 import "dotenv/config";
 import { getAccountFromEnv } from "./accounts";
@@ -6,6 +6,7 @@ import { AssetBurner } from "./asset-burner";
 import { AssetTransfer } from "./asset-transfer";
 import { getRequiredEnv } from "./env";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
+import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
 import { IMonitorStateStore } from "./interfaces/monitor-state-store";
 import { isBackgroundSyncTxpool } from "./interfaces/txpool";
 import { Minter } from "./minter";
@@ -40,6 +41,36 @@ const slackBot = new SlackBot(
     const upstreamGQLClient = new HeadlessGraphQLClient(upstreamPlanet);
     const downstreamGQLClient = new HeadlessGraphQLClient(downstreamPlanet);
 
+    const upstreamAccount = getAccountFromEnv("NC_UPSTREAM");
+    const downstreamAccount = getAccountFromEnv("NC_DOWNSTREAM");
+
+    await slackBot.sendMessage(
+        new AppStartEvent(
+            await upstreamAccount.getAddress(),
+            await downstreamAccount.getAddress(),
+        ),
+    );
+
+    await withMonitors(
+        upstreamGQLClient,
+        downstreamGQLClient,
+        upstreamAccount,
+        downstreamAccount,
+        slackBot,
+    );
+})().catch(async (error) => {
+    console.error(error);
+    await slackBot.sendMessage(new AppStopEvent(error));
+    process.exit(-1);
+});
+
+async function withMonitors(
+    upstreamGQLClient: IHeadlessGraphQLClient,
+    downstreamGQLClient: IHeadlessGraphQLClient,
+    upstreamAccount: Account,
+    downstreamAccount: Account,
+    slackBot: SlackBot,
+) {
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
             getRequiredEnv("MONITOR_STATE_STORE_PATH"),
@@ -71,16 +102,6 @@ const slackBot = new SlackBot(
         upstreamGQLClient,
         Address.fromHex(getRequiredEnv("NC_VAULT_ADDRESS")),
         Address.fromHex(getRequiredEnv("NC_VAULT_AVATAR_ADDRESS")),
-    );
-
-    const upstreamAccount = getAccountFromEnv("NC_UPSTREAM");
-    const downstreamAccount = getAccountFromEnv("NC_DOWNSTREAM");
-
-    await slackBot.sendMessage(
-        new AppStartEvent(
-            await upstreamAccount.getAddress(),
-            await downstreamAccount.getAddress(),
-        ),
     );
 
     const upstreamGenesisBlockHash = await upstreamGQLClient.getGenesisHash();
@@ -155,8 +176,4 @@ const slackBot = new SlackBot(
     if (isBackgroundSyncTxpool(downstreamTxpool)) {
         downstreamTxpool.start();
     }
-})().catch(async (error) => {
-    console.error(error);
-    await slackBot.sendMessage(new AppStopEvent(error));
-    process.exit(-1);
-});
+}
