@@ -39,6 +39,18 @@ model Network {
   genesisHash          String
   requestTransactions  RequestTransaction[]
   responseTransactions ResponseTransaction[]
+  blocks               Block[]
+}
+
+model Block {
+  index BigInt
+
+  networkId String
+  network   Network @relation(fields: [networkId], references: [id])
+
+  transactions RequestTransaction[]
+
+  @@id([index, networkId])
 }
 
 model RequestTransaction {
@@ -48,6 +60,9 @@ model RequestTransaction {
 
   networkId String
   network   Network @relation(fields: [networkId], references: [id])
+
+  blockIndex BigInt
+  block      Block  @relation(fields: [blockIndex, networkId], references: [index, networkId])
 
   createdAt DateTime @default(now())
 
