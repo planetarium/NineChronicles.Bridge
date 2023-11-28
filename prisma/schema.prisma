@@ -36,7 +36,6 @@ enum TxResult {
 
 model Network {
   id                   String                @id
-  genesisHash          String
   requestTransactions  RequestTransaction[]
   responseTransactions ResponseTransaction[]
   blocks               Block[]
