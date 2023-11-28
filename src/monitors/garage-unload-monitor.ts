@@ -56,6 +56,13 @@ export async function getGarageUnloadEvents(
 
     const successEvents: ValidatedGarageUnloadEvent[] = [];
     for (const event of events) {
+        if (
+            event.fungibleAssetValues.length + event.fungibleItems.length ===
+            0
+        ) {
+            continue;
+        }
+
         const { txStatus } = await headlessGraphQLClient.getTransactionResult(
             event.txId,
         );
