@@ -2,9 +2,9 @@
   "name": "araya",
   "version": "1.0.0",
   "scripts": {
-    "compile": "graphql-codegen; tsc",
+    "compile": "prisma generate; graphql-codegen; tsc",
     "start": "npx tsx ./src/index.ts",
-    "codegen": "graphql-codegen"
+    "codegen": "prisma generate; graphql-codegen"
   },
   "type": "commonjs",
   "description": "Custodial tx bridge for Nine Chronicles networks",
