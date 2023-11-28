@@ -4,6 +4,8 @@ export class Processor {
     constructor(private readonly tasks: (() => Promise<void>)[]) {}
 
     async start(): Promise<void> {
+        this.running = true;
+
         let cur = 0;
         while (this.running) {
             await this.tasks[cur]();
