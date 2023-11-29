@@ -1,3 +1,4 @@
+import { Address } from "@planetarium/account";
 import { IObserver } from ".";
 import {
     IFungibleAssetValues,
@@ -22,10 +23,22 @@ export class GarageObserver
 {
     private readonly _slackbot: ISlackMessageSender;
     private readonly _minter: IMinter;
+    private readonly _vaultAddresses: {
+        agentAddress: Address;
+        avatarAddress: Address;
+    };
 
-    constructor(slackbot: ISlackMessageSender, minter: IMinter) {
+    constructor(
+        slackbot: ISlackMessageSender,
+        minter: IMinter,
+        vaultAddresses: {
+            agentAddress: Address;
+            avatarAddress: Address;
+        },
+    ) {
         this._slackbot = slackbot;
         this._minter = minter;
+        this._vaultAddresses = vaultAddresses;
     }
 
     async notify(data: {
@@ -46,10 +59,19 @@ export class GarageObserver
             try {
                 const requests: (IFungibleAssetValues | IFungibleItems)[] = [];
                 for (const fa of fungibleAssetValues) {
-                    requests.push({
-                        recipient: agentAddress,
-                        amount: fa[1],
-                    });
+                    if (fa[0].equals(this._vaultAddresses.agentAddress)) {
+                        requests.push({
+                            recipient: agentAddress,
+                            amount: fa[1],
+                        });
+                    } else if (
+                        fa[0].equals(this._vaultAddresses.avatarAddress)
+                    ) {
+                        requests.push({
+                            recipient: avatarAddress,
+                            amount: fa[1],
+                        });
+                    }
                 }
 
                 for (const fi of fungibleItems) {

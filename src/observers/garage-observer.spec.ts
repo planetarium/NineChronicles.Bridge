@@ -1,5 +1,5 @@
 import test, { mock } from "node:test";
-import { RawPrivateKey } from "@planetarium/account";
+import { Address, RawPrivateKey } from "@planetarium/account";
 import { ChatPostMessageResponse } from "@slack/web-api";
 import { HeadlessGraphQLClient } from "../headless-graphql-client";
 import { Minter } from "../minter";
@@ -32,7 +32,14 @@ test("notify", async () => {
         await headlessClient.getGenesisHash(),
     );
     const minter = new Minter(signer);
-    const observer = new GarageObserver(FAKE_SLACK_MESSAGE_SENDER, minter);
+    const observer = new GarageObserver(FAKE_SLACK_MESSAGE_SENDER, minter, {
+        agentAddress: Address.fromHex(
+            "0x1c2ae97380CFB4F732049e454F6D9A25D4967c6f",
+        ),
+        avatarAddress: Address.fromHex(
+            "0x41aEFE4cdDFb57C9dFfd490e17e571705c593dDc",
+        ),
+    });
     observer.notify({
         blockHash: "xxx",
         events: [

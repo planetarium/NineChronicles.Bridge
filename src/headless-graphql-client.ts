@@ -119,18 +119,24 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                 ]);
                 const memo = values[3];
 
-                return !recipientAvatarAddress.equals(avatarAddress) &&
-                    fungibleAssetValues.filter((fav) =>
-                        agentAddress.equals(fav[0]),
-                    ).length === 0
-                    ? null
-                    : {
-                          txId: tx.id,
-                          signer: tx.signer,
-                          fungibleAssetValues,
-                          fungibleItems,
-                          memo,
-                      };
+                const filteredFungibleAssetValues = fungibleAssetValues.filter(
+                    (fav) =>
+                        agentAddress.equals(fav[0]) ||
+                        avatarAddress.equals(fav[0]),
+                );
+                const filteredFungibleItems = recipientAvatarAddress.equals(
+                    avatarAddress,
+                )
+                    ? fungibleItems
+                    : [];
+
+                return {
+                    txId: tx.id,
+                    signer: tx.signer,
+                    fungibleAssetValues: filteredFungibleAssetValues,
+                    fungibleItems: filteredFungibleItems,
+                    memo,
+                };
             })
             .filter((ev) => ev !== null);
     }
