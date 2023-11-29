@@ -48,7 +48,14 @@ test(".getGarageUnloadEvents()", async () => {
         await heimdallClient.getGenesisHash(),
     );
     const minter = new Minter(signer);
-    const observer = new GarageObserver(FAKE_SLACK_MESSAGE_SENDER, minter);
+    const observer = new GarageObserver(FAKE_SLACK_MESSAGE_SENDER, minter, {
+        agentAddress: Address.fromHex(
+            "0x1c2ae97380CFB4F732049e454F6D9A25D4967c6f",
+        ),
+        avatarAddress: Address.fromHex(
+            "0x41aEFE4cdDFb57C9dFfd490e17e571705c593dDc",
+        ),
+    });
     await observer.notify({
         blockHash: "",
         events: x.map((ev) => {

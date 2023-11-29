@@ -170,7 +170,12 @@ async function withMonitors(
         ),
     );
 
-    garageMonitor.attach(new GarageObserver(slackBot, minter));
+    garageMonitor.attach(
+        new GarageObserver(slackBot, minter, {
+            agentAddress,
+            avatarAddress,
+        }),
+    );
 
     const handleSignal = () => {
         console.log("Handle signal.");
