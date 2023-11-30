@@ -9,6 +9,7 @@ RUN mv ./napi-v6-linux-musl-x64 /build/node_modules/sqlite3/lib/binding
 
 FROM node:20.4
 
+COPY --from=build-env /build/prisma /app/prisma
 COPY --from=build-env /build/dist /app
 COPY --from=build-env /build/node_modules /app/node_modules
 COPY package.json /app
