@@ -4,7 +4,10 @@ import { encodeSignedTx } from "@planetarium/tx";
 import { PrismaClient, RequestCategory, RequestType } from "@prisma/client";
 import { IHeadlessGraphQLClient } from "../../interfaces/headless-graphql-client";
 import { getAssetTransferredEvents } from "../../monitors/assets-transferred-monitor";
-import { getGarageUnloadEvents } from "../../monitors/garage-unload-monitor";
+import {
+    ValidatedGarageUnloadEvent,
+    getGarageUnloadEvents,
+} from "../../monitors/garage-unload-monitor";
 import { getTxId } from "../../utils/tx";
 import { getNextBlockIndex, getNextTxNonce } from "../utils";
 import { responseTransactionsFromGarageEvents } from "./events/garage";
@@ -65,6 +68,12 @@ export async function processUpstreamEvents(
                 avatarAddress,
                 Number(nextBlockIndex),
             );
+            const unloadGarageEventsWithValidMemo = unloadGarageEvents.filter(
+                (ev) => isValidParsedMemo(ev.parsedMemo),
+            );
+            const unloadGarageEventsWithInvalidMemo = unloadGarageEvents.filter(
+                (ev) => !isValidParsedMemo(ev.parsedMemo),
+            );
             const transferAssetEvents = await getAssetTransferredEvents(
                 upstreamGQLClient,
                 agentAddress,
@@ -90,7 +99,7 @@ export async function processUpstreamEvents(
 
             await tx.requestTransaction.createMany({
                 data: [
-                    ...unloadGarageEvents.map((ev) => {
+                    ...unloadGarageEventsWithValidMemo.map((ev) => {
                         return {
                             blockIndex: nextBlockIndex,
                             networkId: upstreamNetworkId,
@@ -126,7 +135,7 @@ export async function processUpstreamEvents(
 
             const responseTransactions = [
                 ...(await responseTransactionsFromGarageEvents(
-                    unloadGarageEvents,
+                    unloadGarageEventsWithValidMemo,
                     downstreamAccount,
                     downstreamNetworkId,
                     downstreamGenesisHash,
@@ -175,4 +184,25 @@ export async function processUpstreamEvents(
             timeout: 60 * 1000,
         },
     );
+}
+
+function isValidParsedMemo(
+    parsedMemo: ValidatedGarageUnloadEvent["parsedMemo"],
+): boolean {
+    return (
+        checkError(() => Address.fromHex(parsedMemo.agentAddress, true)) &&
+        checkError(() => Address.fromHex(parsedMemo.avatarAddress, true)) &&
+        typeof parsedMemo.memo === "string"
+    );
+}
+
+// If the given function throws error, it returns false.
+// If not, it returns true.
+function checkError(fn: () => void) {
+    try {
+        fn();
+        return true;
+    } catch {
+        return false;
+    }
 }
