@@ -55,7 +55,7 @@ export async function processDownstreamEvents(
                     nextBlockIndex,
                     tipIndex,
                 );
-                return;
+                return [nextBlockIndex - 1n, []];
             }
 
             console.debug("[sync][downstream] nextBlockIndex", nextBlockIndex);
