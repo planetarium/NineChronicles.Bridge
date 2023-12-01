@@ -8,8 +8,11 @@ import {
     ValidatedGarageUnloadEvent,
     getGarageUnloadEvents,
 } from "../../monitors/garage-unload-monitor";
+import { SlackBot } from "../../slack/bot";
+import { BridgeErrorEvent } from "../../slack/messages/bridge-error-event";
+import { BridgeEvent } from "../../slack/messages/bridge-event";
 import { getTxId } from "../../utils/tx";
-import { getNextBlockIndex, getNextTxNonce } from "../utils";
+import { dbTypeToSlackType, getNextBlockIndex, getNextTxNonce } from "../utils";
 import { responseTransactionsFromGarageEvents } from "./events/garage";
 import { responseTransactionsFromTransferEvents } from "./events/transfer";
 
@@ -21,6 +24,7 @@ export async function processUpstreamEvents(
     agentAddress: Address,
     avatarAddress: Address,
     defaultStartBlockIndex: bigint,
+    slackBot: SlackBot,
 ) {
     const downstreamNetworkId = downstreamGQLClient.getPlanetID();
     const upstreamNetworkId = upstreamGQLClient.getPlanetID();
@@ -28,7 +32,11 @@ export async function processUpstreamEvents(
         await downstreamGQLClient.getGenesisHash(),
         "hex",
     );
-    await client.$transaction(
+    const [
+        blockIndex,
+        responseTransactions,
+        unloadGarageEventsWithInvalidMemo,
+    ] = await client.$transaction(
         async (tx) => {
             const nextBlockIndex = await getNextBlockIndex(
                 tx,
@@ -161,31 +169,59 @@ export async function processUpstreamEvents(
                 responseTransactions,
             );
 
+            const responseTransactionsDBPayload = responseTransactions.map(
+                ({ signedTx, requestTxId, networkId, type }) => {
+                    const serializedTx = encode(encodeSignedTx(signedTx));
+                    const txid = getTxId(serializedTx);
+                    return {
+                        id: txid,
+                        nonce: signedTx.nonce,
+                        raw: Buffer.from(serializedTx),
+                        type,
+                        networkId: networkId,
+                        requestTransactionId: requestTxId,
+                    };
+                },
+            );
             await tx.responseTransaction.createMany({
-                data: responseTransactions.map(
-                    ({ signedTx, requestTxId, networkId, type }) => {
-                        const serializedTx = encode(encodeSignedTx(signedTx));
-                        const txid = getTxId(serializedTx);
-                        return {
-                            id: txid,
-                            nonce: signedTx.nonce,
-                            raw: Buffer.from(serializedTx),
-                            type,
-                            networkId: networkId,
-                            requestTransactionId: requestTxId,
-                        };
-                    },
-                ),
+                data: responseTransactionsDBPayload,
             });
 
             console.debug(
                 "[sync][upstream] response transaction rows created.",
             );
+
+            return [
+                nextBlockIndex,
+                responseTransactionsDBPayload,
+                unloadGarageEventsWithInvalidMemo,
+            ];
         },
         {
             timeout: 60 * 1000,
         },
     );
+
+    for (const responseTransaction of responseTransactions) {
+        await slackBot.sendMessage(
+            new BridgeEvent(
+                dbTypeToSlackType(responseTransaction.type),
+                [upstreamNetworkId, responseTransaction.requestTransactionId],
+                [responseTransaction.networkId, responseTransaction.id],
+                "NOT_SUPPORTED_FOR_RDB",
+                "NOT_SUPPORTED_FOR_RDB",
+            ),
+        );
+    }
+
+    for (const ev of unloadGarageEventsWithInvalidMemo) {
+        await slackBot.sendMessage(
+            new BridgeErrorEvent(
+                [upstreamNetworkId, ev.txId],
+                new Error(`INVALID_MEMO: ${ev.parsedMemo}`),
+            ),
+        );
+    }
 }
 
 function isValidParsedMemo(

@@ -1,5 +1,8 @@
 import { ISlackMessage, SlackMessageSymbol } from ".";
 import { TxIdWithNetwork, ncscanTxLinkGetter } from "./utils";
+
+export type BridgeEventActionType = "BURN" | "MINT" | "TRANSFER";
+
 export class BridgeEvent implements ISlackMessage {
     [SlackMessageSymbol] = true as const;
 
