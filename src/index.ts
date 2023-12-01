@@ -249,6 +249,7 @@ async function withRDB(
                 downstreamGQLClient,
                 agentAddress,
                 downstreamStartBlockIndex,
+                slackBot,
             ),
         async () =>
             await processUpstreamEvents(
@@ -259,6 +260,7 @@ async function withRDB(
                 agentAddress,
                 avatarAddress,
                 upstreamStartBlockIndex,
+                slackBot,
             ),
         async () =>
             await stageTransactionFromDB(

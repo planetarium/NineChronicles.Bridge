@@ -1,11 +1,21 @@
 import { Account, Address } from "@planetarium/account";
 import { encode } from "@planetarium/bencodex";
 import { encodeSignedTx } from "@planetarium/tx";
-import { PrismaClient, RequestCategory, RequestType } from "@prisma/client";
+import {
+    PrismaClient,
+    RequestCategory,
+    RequestType,
+    ResponseType,
+} from "@prisma/client";
 import { IHeadlessGraphQLClient } from "../../interfaces/headless-graphql-client";
 import { getAssetTransferredEvents } from "../../monitors/assets-transferred-monitor";
+import { SlackBot } from "../../slack/bot";
+import {
+    BridgeEvent,
+    BridgeEventActionType,
+} from "../../slack/messages/bridge-event";
 import { getTxId } from "../../utils/tx";
-import { getNextBlockIndex, getNextTxNonce } from "../utils";
+import { dbTypeToSlackType, getNextBlockIndex, getNextTxNonce } from "../utils";
 import { responseTransactionsFromTransferEvents } from "./events/transfer";
 
 export async function processDownstreamEvents(
@@ -16,6 +26,7 @@ export async function processDownstreamEvents(
     downstreamGQLClient: IHeadlessGraphQLClient,
     agentAddress: Address,
     defaultStartBlockIndex: bigint,
+    slackBot: SlackBot,
 ) {
     const upstreamNetworkId = upstreamGQLClient.getPlanetID();
     const downstreamNetworkId = downstreamGQLClient.getPlanetID();
@@ -28,7 +39,7 @@ export async function processDownstreamEvents(
         "hex",
     );
 
-    await client.$transaction(
+    const [blockIndex, responseTransactions] = await client.$transaction(
         async (tx) => {
             const nextBlockIndex = await getNextBlockIndex(
                 tx,
@@ -84,6 +95,7 @@ export async function processDownstreamEvents(
                             blockIndex: nextBlockIndex,
                             networkId: downstreamNetworkId,
                             type: RequestType.TRANSFER_ASSET,
+                            sender: ev.sender.toString(),
                             category: RequestCategory.PROCESS,
                             id: ev.txId,
                         };
@@ -142,29 +154,44 @@ export async function processDownstreamEvents(
                 responseTransactions,
             );
 
+            const responseTransactionsDBPayload = responseTransactions.map(
+                ({ signedTx, requestTxId, type, networkId }) => {
+                    const serializedTx = encode(encodeSignedTx(signedTx));
+                    const txid = getTxId(serializedTx);
+                    return {
+                        id: txid,
+                        nonce: signedTx.nonce,
+                        raw: Buffer.from(serializedTx),
+                        type,
+                        networkId,
+                        requestTransactionId: requestTxId,
+                    };
+                },
+            );
             await tx.responseTransaction.createMany({
-                data: responseTransactions.map(
-                    ({ signedTx, requestTxId, type, networkId }) => {
-                        const serializedTx = encode(encodeSignedTx(signedTx));
-                        const txid = getTxId(serializedTx);
-                        return {
-                            id: txid,
-                            nonce: signedTx.nonce,
-                            raw: Buffer.from(serializedTx),
-                            type,
-                            networkId,
-                            requestTransactionId: requestTxId,
-                        };
-                    },
-                ),
+                data: responseTransactionsDBPayload,
             });
 
             console.debug(
                 "[sync][downstream] response transaction rows created.",
             );
+
+            return [nextBlockIndex, responseTransactionsDBPayload];
         },
         {
             timeout: 60 * 1000,
         },
     );
+
+    for (const responseTransaction of responseTransactions) {
+        await slackBot.sendMessage(
+            new BridgeEvent(
+                dbTypeToSlackType(responseTransaction.type),
+                [downstreamNetworkId, responseTransaction.requestTransactionId],
+                [responseTransaction.networkId, responseTransaction.id],
+                "NOT_SUPPORTED_FOR_RDB",
+                "NOT_SUPPORTED_FOR_RDB",
+            ),
+        );
+    }
 }

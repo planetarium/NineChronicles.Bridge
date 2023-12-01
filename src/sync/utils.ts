@@ -1,5 +1,7 @@
 import { Account } from "@planetarium/account";
+import { ResponseType } from "@prisma/client";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
+import { BridgeEventActionType } from "../slack/messages/bridge-event";
 import { PrismaTransactionClient } from "./types";
 
 export async function getNextTxNonce(
@@ -50,4 +52,14 @@ export async function getNextBlockIndex(
     }
 
     return defaultStartBlockIndex;
+}
+
+export function dbTypeToSlackType(type: ResponseType): BridgeEventActionType {
+    if (type === "TRANSFER_ASSET") {
+        return "TRANSFER";
+    } else if (type === "MINT_ASSETS") {
+        return "MINT";
+    } else if (type === "BURN_ASSET") {
+        return "BURN";
+    }
 }
