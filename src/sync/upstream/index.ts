@@ -103,6 +103,7 @@ export async function processUpstreamEvents(
                         return {
                             blockIndex: nextBlockIndex,
                             networkId: upstreamNetworkId,
+                            sender: Address.fromHex(ev.signer, true).toString(),
                             type: RequestType.UNLOAD_FROM_MY_GARAGES,
                             category: RequestCategory.PROCESS,
                             id: ev.txId,
@@ -113,6 +114,7 @@ export async function processUpstreamEvents(
                             blockIndex: nextBlockIndex,
                             networkId: upstreamNetworkId,
                             type: RequestType.TRANSFER_ASSET,
+                            sender: ev.sender.toString(),
                             category: RequestCategory.PROCESS,
                             id: ev.txId,
                         };

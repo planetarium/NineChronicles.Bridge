@@ -65,6 +65,8 @@ model RequestTransaction {
 
   createdAt DateTime @default(now())
 
+  sender String
+
   executions ResponseTransaction[]
 }
 

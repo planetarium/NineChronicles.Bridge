@@ -84,6 +84,7 @@ export async function processDownstreamEvents(
                             blockIndex: nextBlockIndex,
                             networkId: downstreamNetworkId,
                             type: RequestType.TRANSFER_ASSET,
+                            sender: ev.sender.toString(),
                             category: RequestCategory.PROCESS,
                             id: ev.txId,
                         };
