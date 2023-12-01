@@ -215,12 +215,16 @@ export async function processUpstreamEvents(
     }
 
     for (const ev of unloadGarageEventsWithInvalidMemo) {
-        await slackBot.sendMessage(
-            new BridgeErrorEvent(
-                [upstreamNetworkId, ev.txId],
-                new Error(`INVALID_MEMO: ${ev.parsedMemo}`),
-            ),
-        );
+        try {
+            await slackBot.sendMessage(
+                new BridgeErrorEvent(
+                    [upstreamNetworkId, ev.txId],
+                    new Error(`INVALID_MEMO: ${JSON.stringify(ev.parsedMemo)}`),
+                ),
+            );
+        } catch (e) {
+            console.error("[sync][upstream] Failed to send slack message", e);
+        }
     }
 }
 
