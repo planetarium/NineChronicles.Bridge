@@ -63,7 +63,7 @@ export async function processDownstreamEvents(
             console.debug("[sync][downstream] block row created.");
 
             const transferAssetEvents = await getAssetTransferredEvents(
-                upstreamGQLClient,
+                downstreamGQLClient,
                 agentAddress,
                 Number(nextBlockIndex),
             );
