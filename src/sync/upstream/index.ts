@@ -52,7 +52,7 @@ export async function processUpstreamEvents(
                     nextBlockIndex,
                     tipIndex,
                 );
-                return [nextBlockIndex - 1n, []];
+                return [nextBlockIndex - 1n, [], []];
             }
 
             console.debug("[sync][upstream] nextBlockIndex", nextBlockIndex);
