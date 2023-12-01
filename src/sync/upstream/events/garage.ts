@@ -1,4 +1,4 @@
-import { Account } from "@planetarium/account";
+import { Account, Address } from "@planetarium/account";
 import { signTx } from "@planetarium/tx";
 import { ResponseType } from "@prisma/client";
 import {
@@ -16,6 +16,10 @@ export async function responseTransactionsFromGarageEvents(
     networkId: string,
     genesisHash: Uint8Array,
     startNonce: bigint,
+    vaultAddresses: {
+        agentAddress: Address;
+        avatarAddress: Address;
+    },
 ): Promise<BridgeResponse[]> {
     const signerAddress = await account.getAddress();
     const responses: BridgeResponse[] = [];
@@ -28,10 +32,17 @@ export async function responseTransactionsFromGarageEvents(
     } of events) {
         const requests: (IFungibleAssetValues | IFungibleItems)[] = [];
         for (const fa of fungibleAssetValues) {
-            requests.push({
-                recipient: agentAddress,
-                amount: fa[1],
-            });
+            if (fa[0].equals(vaultAddresses.agentAddress)) {
+                requests.push({
+                    recipient: agentAddress,
+                    amount: fa[1],
+                });
+            } else if (fa[0].equals(vaultAddresses.avatarAddress)) {
+                requests.push({
+                    recipient: avatarAddress,
+                    amount: fa[1],
+                });
+            }
         }
 
         for (const fi of fungibleItems) {

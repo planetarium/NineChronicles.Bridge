@@ -150,6 +150,10 @@ export async function processUpstreamEvents(
                     downstreamNetworkId,
                     downstreamGenesisHash,
                     downstreamNextTxNonce,
+                    {
+                        agentAddress,
+                        avatarAddress,
+                    },
                 )),
                 ...(await responseTransactionsFromTransferEvents(
                     transferAssetEvents,
