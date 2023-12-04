@@ -160,7 +160,8 @@ export async function processUpstreamEvents(
                     downstreamAccount,
                     downstreamNetworkId,
                     downstreamGenesisHash,
-                    downstreamNextTxNonce + BigInt(unloadGarageEvents.length),
+                    downstreamNextTxNonce +
+                        BigInt(unloadGarageEventsWithValidMemo.length),
                 )),
             ];
 
