@@ -238,7 +238,7 @@ function isValidParsedMemo(
     return (
         checkError(() => Address.fromHex(parsedMemo.agentAddress, true)) &&
         checkError(() => Address.fromHex(parsedMemo.avatarAddress, true)) &&
-        typeof parsedMemo.memo === "string"
+        (typeof parsedMemo.memo === "string" || parsedMemo.memo === null)
     );
 }
 
