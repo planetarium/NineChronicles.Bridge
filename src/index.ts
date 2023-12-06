@@ -238,43 +238,57 @@ async function withRDB(
         [downstreamGQLClient.getPlanetID()]: downstreamGQLClient,
     };
 
-    const processor = new Processor([
-        async () => await updateTxStatuses(client, headlessGQLClientsMap),
-        async () =>
-            await processDownstreamEvents(
-                upstreamAccount,
-                downstreamAccount,
-                client,
-                upstreamGQLClient,
-                downstreamGQLClient,
-                agentAddress,
-                downstreamStartBlockIndex,
-                slackBot,
-            ),
-        async () =>
-            await processUpstreamEvents(
-                downstreamAccount,
-                client,
-                upstreamGQLClient,
-                downstreamGQLClient,
-                agentAddress,
-                avatarAddress,
-                upstreamStartBlockIndex,
-                slackBot,
-            ),
-        async () =>
-            await stageTransactionFromDB(
-                upstreamAccount,
-                client,
-                upstreamGQLClient,
-            ),
-        async () =>
-            await stageTransactionFromDB(
-                downstreamAccount,
-                client,
-                downstreamGQLClient,
-            ),
-    ]);
+    const processor = new Processor(
+        [
+            async () =>
+                await processDownstreamEvents(
+                    upstreamAccount,
+                    downstreamAccount,
+                    client,
+                    upstreamGQLClient,
+                    downstreamGQLClient,
+                    agentAddress,
+                    downstreamStartBlockIndex,
+                    slackBot,
+                ),
+            async () =>
+                await processUpstreamEvents(
+                    downstreamAccount,
+                    client,
+                    upstreamGQLClient,
+                    downstreamGQLClient,
+                    agentAddress,
+                    avatarAddress,
+                    upstreamStartBlockIndex,
+                    slackBot,
+                ),
+        ],
+        [
+            [
+                5000,
+                async () =>
+                    await updateTxStatuses(client, headlessGQLClientsMap),
+            ],
+            [
+                5000,
+                async () =>
+                    await stageTransactionFromDB(
+                        upstreamAccount,
+                        client,
+                        upstreamGQLClient,
+                    ),
+            ],
+            [
+                5000,
+                async () =>
+                    await stageTransactionFromDB(
+                        downstreamAccount,
+                        client,
+                        downstreamGQLClient,
+                    ),
+            ],
+        ],
+    );
 
     function makeShutdownHandler(signal: string): () => Promise<void> {
         return async () => {

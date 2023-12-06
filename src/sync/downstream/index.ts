@@ -14,6 +14,7 @@ import {
     BridgeEvent,
     BridgeEventActionType,
 } from "../../slack/messages/bridge-event";
+import { delay } from "../../utils/delay";
 import { getTxId } from "../../utils/tx";
 import { dbTypeToSlackType, getNextBlockIndex, getNextTxNonce } from "../utils";
 import { responseTransactionsFromTransferEvents } from "./events/transfer";
@@ -39,7 +40,7 @@ export async function processDownstreamEvents(
         "hex",
     );
 
-    const [blockIndex, responseTransactions] = await client.$transaction(
+    const [isSkipped, responseTransactions] = await client.$transaction(
         async (tx) => {
             const nextBlockIndex = await getNextBlockIndex(
                 tx,
@@ -55,7 +56,7 @@ export async function processDownstreamEvents(
                     nextBlockIndex,
                     tipIndex,
                 );
-                return [nextBlockIndex - 1n, []];
+                return [true, []];
             }
 
             console.debug("[sync][downstream] nextBlockIndex", nextBlockIndex);
@@ -176,12 +177,16 @@ export async function processDownstreamEvents(
                 "[sync][downstream] response transaction rows created.",
             );
 
-            return [nextBlockIndex, responseTransactionsDBPayload];
+            return [false, responseTransactionsDBPayload];
         },
         {
             timeout: 60 * 1000,
         },
     );
+
+    if (isSkipped) {
+        await delay(1000);
+    }
 
     for (const responseTransaction of responseTransactions) {
         await slackBot.sendMessage(
