@@ -7,7 +7,7 @@ import {
     ValidatedGarageUnloadEvent,
     getGarageUnloadEvents,
 } from "../../events/garage-unload";
-import { IHeadlessGraphQLClient } from "../../interfaces/headless-graphql-client";
+import { IHeadlessGraphQLClient } from "../../headless-graphql-client";
 import { SlackBot } from "../../slack/bot";
 import { BridgeErrorEvent } from "../../slack/messages/bridge-error-event";
 import { BridgeEvent } from "../../slack/messages/bridge-event";

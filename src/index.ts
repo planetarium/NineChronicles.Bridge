@@ -5,7 +5,7 @@ import "dotenv/config";
 import { getAccountFromEnv } from "./accounts";
 import { getEnv, getRequiredEnv } from "./env";
 import { HeadlessGraphQLClient } from "./headless-graphql-client";
-import { IHeadlessGraphQLClient } from "./interfaces/headless-graphql-client";
+import { IHeadlessGraphQLClient } from "./headless-graphql-client";
 import { PreloadHandler } from "./preload-handler";
 import { SlackBot } from "./slack/bot";
 import { SlackChannel } from "./slack/channel";

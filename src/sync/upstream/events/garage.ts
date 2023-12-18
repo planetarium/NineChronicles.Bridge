@@ -1,12 +1,12 @@
 import { Account, Address } from "@planetarium/account";
 import { signTx } from "@planetarium/tx";
 import { ResponseType } from "@prisma/client";
-import { ValidatedGarageUnloadEvent } from "../../../events/garage-unload";
 import {
     IFungibleAssetValues,
     IFungibleItems,
-} from "../../../interfaces/minter";
-import { encodeMintAssetsAction } from "../../../actions/mint";
+    encodeMintAssetsAction,
+} from "../../../actions/mint";
+import { ValidatedGarageUnloadEvent } from "../../../events/garage-unload";
 import { SUPER_FUTURE_DATETIME, additionalGasTxProperties } from "../../../tx";
 import { BridgeResponse } from "../../types";
 

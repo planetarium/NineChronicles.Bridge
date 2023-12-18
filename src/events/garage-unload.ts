@@ -1,5 +1,5 @@
 import { Address } from "@planetarium/account";
-import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
+import { IHeadlessGraphQLClient } from "../headless-graphql-client";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
 
 export type ValidatedGarageUnloadEvent = Omit<GarageUnloadEvent, "memo"> & {

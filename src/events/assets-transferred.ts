@@ -1,5 +1,5 @@
 import { Address } from "@planetarium/account";
-import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
+import { IHeadlessGraphQLClient } from "../headless-graphql-client";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { TransactionLocation } from "../types/transaction-location";
 

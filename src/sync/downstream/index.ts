@@ -8,7 +8,7 @@ import {
     ResponseType,
 } from "@prisma/client";
 import { getAssetTransferredEvents } from "../../events/assets-transferred";
-import { IHeadlessGraphQLClient } from "../../interfaces/headless-graphql-client";
+import { IHeadlessGraphQLClient } from "../../headless-graphql-client";
 import { SlackBot } from "../../slack/bot";
 import {
     BridgeEvent,
