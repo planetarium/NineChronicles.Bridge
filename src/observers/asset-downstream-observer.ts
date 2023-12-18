@@ -17,12 +17,12 @@ export class AssetDownstreamObserver
             events: (AssetTransferredEvent & TransactionLocation)[];
         }>
 {
-    private readonly _slackbot: ISlackMessageSender;
+    private readonly _slackbot: ISlackMessageSender | null;
     private readonly _transfer: IAssetTransfer;
     private readonly _burner: IAssetBurner;
 
     constructor(
-        slackbot: ISlackMessageSender,
+        slackbot: ISlackMessageSender | null,
         upstreamTransfer: IAssetTransfer,
         downstreamBurner: IAssetBurner,
     ) {
@@ -60,7 +60,7 @@ export class AssetDownstreamObserver
                 const recipient = ev.memo.toString();
                 this.debug("Try to burn");
                 const burnTxId = await this._burner.burn(ev.amount, ev.txId);
-                await this._slackbot.sendMessage(
+                await this._slackbot?.sendMessage(
                     new BridgeEvent(
                         "BURN",
                         [ev.planetID, ev.txId],
@@ -95,7 +95,7 @@ export class AssetDownstreamObserver
                     amount,
                     null,
                 );
-                await this._slackbot.sendMessage(
+                await this._slackbot?.sendMessage(
                     new BridgeEvent(
                         "TRANSFER",
                         [ev.planetID, ev.txId],
@@ -107,7 +107,7 @@ export class AssetDownstreamObserver
                 this.debug("TransferAsset TxId is", transferTxId);
             } catch (e) {
                 console.error(e);
-                await this._slackbot.sendMessage(
+                await this._slackbot?.sendMessage(
                     new BridgeErrorEvent([ev.planetID, ev.txId], e),
                 );
             }

@@ -8,12 +8,6 @@ import { Sqlite3MonitorStateStore } from "../sqlite3-monitor-state-store";
 import { HeadlessTxPool } from "../txpool/headless";
 import { GarageObserver } from "./garage-observer";
 
-const FAKE_SLACK_MESSAGE_SENDER = {
-    sendMessage() {
-        return Promise.resolve({}) as Promise<ChatPostMessageResponse>;
-    },
-};
-
 test("notify", async () => {
     const monitorStateStore = await Sqlite3MonitorStateStore.open("test");
     const account = RawPrivateKey.fromHex("");
@@ -32,7 +26,7 @@ test("notify", async () => {
         await headlessClient.getGenesisHash(),
     );
     const minter = new Minter(signer);
-    const observer = new GarageObserver(FAKE_SLACK_MESSAGE_SENDER, minter, {
+    const observer = new GarageObserver(null, minter, {
         agentAddress: Address.fromHex(
             "0x1c2ae97380CFB4F732049e454F6D9A25D4967c6f",
         ),

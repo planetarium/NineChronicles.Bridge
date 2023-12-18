@@ -21,7 +21,7 @@ export class GarageObserver
             events: (ValidatedGarageUnloadEvent & TransactionLocation)[];
         }>
 {
-    private readonly _slackbot: ISlackMessageSender;
+    private readonly _slackbot: ISlackMessageSender | null;
     private readonly _minter: IMinter;
     private readonly _vaultAddresses: {
         agentAddress: Address;
@@ -29,7 +29,7 @@ export class GarageObserver
     };
 
     constructor(
-        slackbot: ISlackMessageSender,
+        slackbot: ISlackMessageSender | null,
         minter: IMinter,
         vaultAddresses: {
             agentAddress: Address;
@@ -88,7 +88,7 @@ export class GarageObserver
                         requests,
                         memoForMinter,
                     );
-                    await this._slackbot.sendMessage(
+                    await this._slackbot?.sendMessage(
                         new BridgeEvent(
                             "MINT",
                             [planetID, txId],
@@ -100,7 +100,7 @@ export class GarageObserver
                 }
             } catch (e) {
                 console.error(e);
-                await this._slackbot.sendMessage(
+                await this._slackbot?.sendMessage(
                     new BridgeErrorEvent([planetID, txId], e),
                 );
             }

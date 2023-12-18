@@ -27,7 +27,7 @@ export async function processDownstreamEvents(
     downstreamGQLClient: IHeadlessGraphQLClient,
     agentAddress: Address,
     defaultStartBlockIndex: bigint,
-    slackBot: SlackBot,
+    slackBot: SlackBot | null,
 ) {
     const upstreamNetworkId = upstreamGQLClient.getPlanetID();
     const downstreamNetworkId = downstreamGQLClient.getPlanetID();
@@ -189,7 +189,7 @@ export async function processDownstreamEvents(
     }
 
     for (const responseTransaction of responseTransactions) {
-        await slackBot.sendMessage(
+        await slackBot?.sendMessage(
             new BridgeEvent(
                 dbTypeToSlackType(responseTransaction.type),
                 [downstreamNetworkId, responseTransaction.requestTransactionId],
