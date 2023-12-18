@@ -6,7 +6,7 @@ import {
     IFungibleAssetValues,
     IFungibleItems,
 } from "../../../interfaces/minter";
-import { encodeMintAssetsAction } from "../../../minter";
+import { encodeMintAssetsAction } from "../../../actions/mint";
 import { SUPER_FUTURE_DATETIME, additionalGasTxProperties } from "../../../tx";
 import { BridgeResponse } from "../../types";
 

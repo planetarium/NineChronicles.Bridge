@@ -1,7 +1,7 @@
 import { Account } from "@planetarium/account";
 import { FungibleAssetValue, signTx } from "@planetarium/tx";
 import { ResponseType } from "@prisma/client";
-import { encodeMintAssetsAction } from "../../../minter";
+import { encodeMintAssetsAction } from "../../../actions/mint";
 import { SUPER_FUTURE_DATETIME, additionalGasTxProperties } from "../../../tx";
 import { AssetTransferredEvent } from "../../../types/asset-transferred-event";
 import { BridgeResponse } from "../../types";

@@ -1,7 +1,7 @@
 import { Address } from "@planetarium/account";
 import { RecordView, Value } from "@planetarium/bencodex";
 import { encodeCurrency } from "@planetarium/tx";
-import { IFungibleAssetValues, IFungibleItems } from "./interfaces/minter";
+import { IFungibleAssetValues, IFungibleItems } from "../interfaces/minter";
 
 function encodeMintSpec(value: IFungibleAssetValues | IFungibleItems): Value {
     if ((value as IFungibleAssetValues).amount !== undefined) {
