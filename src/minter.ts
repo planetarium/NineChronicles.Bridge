@@ -1,36 +1,7 @@
 import { Address } from "@planetarium/account";
 import { RecordView, Value } from "@planetarium/bencodex";
 import { encodeCurrency } from "@planetarium/tx";
-import {
-    IFungibleAssetValues,
-    IFungibleItems,
-    IMinter,
-} from "./interfaces/minter";
-import { Signer } from "./signer";
-
-export class Minter implements IMinter {
-    private readonly signer: Signer;
-
-    constructor(signer: Signer) {
-        this.signer = signer;
-    }
-
-    async mintAssets(
-        assets: [IFungibleAssetValues | IFungibleItems],
-        memo: string | null,
-    ): Promise<string> {
-        const action = encodeMintAssetsAction(assets, memo);
-        return await this.signer.sendTx(action);
-    }
-
-    getMinterAddress(): Promise<Address> {
-        return this.signer.getAddress();
-    }
-
-    getMinterPlanet(): string {
-        return this.signer.getSignPlanet();
-    }
-}
+import { IFungibleAssetValues, IFungibleItems } from "./interfaces/minter";
 
 function encodeMintSpec(value: IFungibleAssetValues | IFungibleItems): Value {
     if ((value as IFungibleAssetValues).amount !== undefined) {
