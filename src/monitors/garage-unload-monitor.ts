@@ -1,9 +1,6 @@
 import { Address } from "@planetarium/account";
 import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
-import { IMonitorStateHandler } from "../interfaces/monitor-state-handler";
 import { GarageUnloadEvent } from "../types/garage-unload-event";
-import { TransactionLocation } from "../types/transaction-location";
-import { NineChroniclesMonitor } from "./ninechronicles-block-monitor";
 
 export type ValidatedGarageUnloadEvent = Omit<GarageUnloadEvent, "memo"> & {
     parsedMemo: {
@@ -12,33 +9,6 @@ export type ValidatedGarageUnloadEvent = Omit<GarageUnloadEvent, "memo"> & {
         memo: string;
     };
 };
-
-export class GarageUnloadMonitor extends NineChroniclesMonitor<ValidatedGarageUnloadEvent> {
-    private readonly _agentAddress: Address;
-    private readonly _avatarAddress: Address;
-
-    constructor(
-        monitorStateHandler: IMonitorStateHandler,
-        headlessGraphQLClient: IHeadlessGraphQLClient,
-        agentAddress: Address,
-        avatarAddress: Address,
-    ) {
-        super(monitorStateHandler, headlessGraphQLClient);
-        this._agentAddress = agentAddress;
-        this._avatarAddress = avatarAddress;
-    }
-
-    protected async getEvents(
-        blockIndex: number,
-    ): Promise<(ValidatedGarageUnloadEvent & TransactionLocation)[]> {
-        return getGarageUnloadEvents(
-            this._headlessGraphQLClient,
-            this._agentAddress,
-            this._avatarAddress,
-            blockIndex,
-        );
-    }
-}
 
 export async function getGarageUnloadEvents(
     headlessGraphQLClient: IHeadlessGraphQLClient,
