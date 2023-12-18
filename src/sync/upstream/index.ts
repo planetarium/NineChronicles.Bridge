@@ -25,7 +25,7 @@ export async function processUpstreamEvents(
     agentAddress: Address,
     avatarAddress: Address,
     defaultStartBlockIndex: bigint,
-    slackBot: SlackBot,
+    slackBot: SlackBot | null,
 ) {
     const downstreamNetworkId = downstreamGQLClient.getPlanetID();
     const upstreamNetworkId = upstreamGQLClient.getPlanetID();
@@ -220,7 +220,7 @@ export async function processUpstreamEvents(
     }
 
     for (const responseTransaction of responseTransactions) {
-        await slackBot.sendMessage(
+        await slackBot?.sendMessage(
             new BridgeEvent(
                 dbTypeToSlackType(responseTransaction.type),
                 [upstreamNetworkId, responseTransaction.requestTransactionId],
@@ -233,7 +233,7 @@ export async function processUpstreamEvents(
 
     for (const ev of unloadGarageEventsWithInvalidMemo) {
         try {
-            await slackBot.sendMessage(
+            await slackBot?.sendMessage(
                 new BridgeErrorEvent(
                     [upstreamNetworkId, ev.txId],
                     new Error(`INVALID_MEMO: ${JSON.stringify(ev.parsedMemo)}`),

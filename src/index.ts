@@ -32,13 +32,18 @@ import { processUpstreamEvents } from "./sync/upstream";
 import { getTxpoolFromEnv } from "./txpool";
 import { Planet } from "./types/registry";
 
-const slackBot = new SlackBot(
-    getRequiredEnv("SLACK__BOT_USERNAME"),
-    new SlackChannel(
-        getRequiredEnv("SLACK__CHANNEL"),
-        new WebClient(getRequiredEnv("SLACK__BOT_TOKEN")),
-    ),
-);
+const SLACK_BOT_USERNAME = getEnv("SLACK__BOT_USERNAME");
+const SLACK_CHANNEL = getEnv("SLACK__CHANNEL");
+const SLACK_BOT_TOKEN = getEnv("SLACK__BOT_TOKEN");
+const slackBot: SlackBot | null =
+    SLACK_BOT_USERNAME !== undefined &&
+    SLACK_BOT_TOKEN !== undefined &&
+    SLACK_CHANNEL !== undefined
+        ? new SlackBot(
+              SLACK_BOT_USERNAME,
+              new SlackChannel(SLACK_CHANNEL, new WebClient(SLACK_BOT_TOKEN)),
+          )
+        : null;
 
 (async () => {
     const [upstreamPlanet, downstreamPlanet]: Planet[] =
@@ -50,7 +55,7 @@ const slackBot = new SlackBot(
     const upstreamAccount = getAccountFromEnv("NC_UPSTREAM");
     const downstreamAccount = getAccountFromEnv("NC_DOWNSTREAM");
 
-    await slackBot.sendMessage(
+    await slackBot?.sendMessage(
         new AppStartEvent(
             await upstreamAccount.getAddress(),
             await downstreamAccount.getAddress(),
@@ -86,7 +91,7 @@ const slackBot = new SlackBot(
     }
 })().catch(async (error) => {
     console.error(error);
-    await slackBot.sendMessage(new AppStopEvent(error));
+    await slackBot?.sendMessage(new AppStopEvent(error));
     process.exit(-1);
 });
 
@@ -97,7 +102,7 @@ async function withMonitors(
     downstreamAccount: Account,
     agentAddress: Address,
     avatarAddress: Address,
-    slackBot: SlackBot,
+    slackBot: SlackBot | null,
 ) {
     const monitorStateStore: IMonitorStateStore =
         await Sqlite3MonitorStateStore.open(
@@ -192,7 +197,7 @@ async function withMonitors(
             downstreamTxpool.stop();
         }
 
-        slackBot.sendMessage(new AppStopEvent());
+        slackBot?.sendMessage(new AppStopEvent());
     };
 
     process.on("SIGTERM", handleSignal);
@@ -218,7 +223,7 @@ async function withRDB(
     downstreamAccount: Account,
     agentAddress: Address,
     avatarAddress: Address,
-    slackBot: SlackBot,
+    slackBot: SlackBot | null,
 ) {
     const upstreamStartBlockIndex = BigInt(
         getRequiredEnv("NC_UPSTREAM__RDB__START_BLOCK_INDEX"),
@@ -294,7 +299,7 @@ async function withRDB(
         return async () => {
             console.log(signal, "handler called.");
             await processor.stop();
-            await slackBot.sendMessage(new AppStopEvent());
+            await slackBot?.sendMessage(new AppStopEvent());
         };
     }
 

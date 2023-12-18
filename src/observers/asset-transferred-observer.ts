@@ -18,8 +18,8 @@ export class AssetTransferredObserver
         }>
 {
     private readonly _minter: IMinter;
-    private readonly _slackbot: ISlackMessageSender;
-    constructor(slackbot: ISlackMessageSender, minter: IMinter) {
+    private readonly _slackbot: ISlackMessageSender | null;
+    constructor(slackbot: ISlackMessageSender | null, minter: IMinter) {
         this._slackbot = slackbot;
 
         this._minter = minter;
@@ -55,7 +55,7 @@ export class AssetTransferredObserver
                     [{ recipient, amount: amountToMint }],
                     null,
                 );
-                await this._slackbot.sendMessage(
+                await this._slackbot?.sendMessage(
                     new BridgeEvent(
                         "MINT",
                         [planetID, txId],
@@ -66,7 +66,7 @@ export class AssetTransferredObserver
                 );
             } catch (e) {
                 console.error(e);
-                await this._slackbot.sendMessage(
+                await this._slackbot?.sendMessage(
                     new BridgeErrorEvent([planetID, txId], e),
                 );
             }
