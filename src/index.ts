@@ -52,6 +52,11 @@ const slackBot: SlackBot | null =
     const avatarAddress = Address.fromHex(
         getRequiredEnv("NC_VAULT_AVATAR_ADDRESS"),
     );
+    const upstreamNcgMinter = Address.fromHex(
+        getEnv("NC_UPSTREAM_NCG_MINTER") ||
+            "47d082a115c63e7b58b1532d20e631538eafadde",
+        false,
+    );
 
     const useRDB = getEnv("USE_RDB");
     if (useRDB?.toLowerCase() === "true") {
@@ -62,6 +67,7 @@ const slackBot: SlackBot | null =
             downstreamAccount,
             agentAddress,
             avatarAddress,
+            upstreamNcgMinter,
             slackBot,
         );
     } else {
@@ -80,6 +86,7 @@ async function withRDB(
     downstreamAccount: Account,
     agentAddress: Address,
     avatarAddress: Address,
+    upstreamNcgMinter: Address,
     slackBot: SlackBot | null,
 ) {
     const upstreamStartBlockIndex = BigInt(
@@ -110,6 +117,7 @@ async function withRDB(
                     upstreamGQLClient,
                     downstreamGQLClient,
                     agentAddress,
+                    upstreamNcgMinter,
                     downstreamStartBlockIndex,
                     slackBot,
                 ),

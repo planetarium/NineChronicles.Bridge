@@ -17,11 +17,13 @@ export async function responseTransactionsFromTransferEvents(
         networkId: upstreamNetworkId,
         genesisHash: upstreamGenesisHash,
         startNonce: upstreamStartNonce,
+        ncgMinter: upstreamNcgMinter,
     }: {
         account: Account;
         networkId: string;
         genesisHash: Uint8Array;
         startNonce: bigint;
+        ncgMinter: Address;
     },
     {
         account: downstreamAccount,
@@ -53,12 +55,7 @@ export async function responseTransactionsFromTransferEvents(
                 ? {
                       currency: {
                           ...amount.currency,
-                          minters: new Set([
-                              Buffer.from(
-                                  "47d082a115c63e7b58b1532d20e631538eafadde",
-                                  "hex",
-                              ),
-                          ]),
+                          minters: new Set([upstreamNcgMinter.toBytes()]),
                       },
                       rawValue: amount.rawValue,
                   }
