@@ -2,12 +2,12 @@ import { Account, Address } from "@planetarium/account";
 import { encode } from "@planetarium/bencodex";
 import { encodeSignedTx } from "@planetarium/tx";
 import { PrismaClient, RequestCategory, RequestType } from "@prisma/client";
-import { IHeadlessGraphQLClient } from "../../interfaces/headless-graphql-client";
-import { getAssetTransferredEvents } from "../../monitors/assets-transferred-monitor";
+import { getAssetTransferredEvents } from "../../events/assets-transferred";
 import {
     ValidatedGarageUnloadEvent,
     getGarageUnloadEvents,
-} from "../../monitors/garage-unload-monitor";
+} from "../../events/garage-unload";
+import { IHeadlessGraphQLClient } from "../../headless-graphql-client";
 import { SlackBot } from "../../slack/bot";
 import { BridgeErrorEvent } from "../../slack/messages/bridge-error-event";
 import { BridgeEvent } from "../../slack/messages/bridge-event";

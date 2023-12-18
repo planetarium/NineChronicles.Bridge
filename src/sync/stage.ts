@@ -1,6 +1,6 @@
 import { Account } from "@planetarium/account";
 import { PrismaClient } from "@prisma/client";
-import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
+import { IHeadlessGraphQLClient } from "../headless-graphql-client";
 
 export async function stageTransactionFromDB(
     account: Account,

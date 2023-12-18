@@ -1,6 +1,6 @@
 import { Account } from "@planetarium/account";
 import { ResponseType } from "@prisma/client";
-import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
+import { IHeadlessGraphQLClient } from "../headless-graphql-client";
 import { BridgeEventActionType } from "../slack/messages/bridge-event";
 import { PrismaTransactionClient } from "./types";
 

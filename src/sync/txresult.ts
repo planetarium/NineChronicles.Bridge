@@ -1,5 +1,5 @@
 import { PrismaClient, TxResult } from "@prisma/client";
-import { IHeadlessGraphQLClient } from "../interfaces/headless-graphql-client";
+import { IHeadlessGraphQLClient } from "../headless-graphql-client";
 
 const LIMIT = 10;
 

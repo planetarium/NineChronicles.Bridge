@@ -4,9 +4,9 @@ import { ResponseType } from "@prisma/client";
 import {
     IFungibleAssetValues,
     IFungibleItems,
-} from "../../../interfaces/minter";
-import { encodeMintAssetsAction } from "../../../minter";
-import { ValidatedGarageUnloadEvent } from "../../../monitors/garage-unload-monitor";
+    encodeMintAssetsAction,
+} from "../../../actions/mint";
+import { ValidatedGarageUnloadEvent } from "../../../events/garage-unload";
 import { SUPER_FUTURE_DATETIME, additionalGasTxProperties } from "../../../tx";
 import { BridgeResponse } from "../../types";
 
