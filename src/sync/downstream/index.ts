@@ -26,6 +26,7 @@ export async function processDownstreamEvents(
     upstreamGQLClient: IHeadlessGraphQLClient,
     downstreamGQLClient: IHeadlessGraphQLClient,
     agentAddress: Address,
+    upstreamNcgMinter: Address,
     defaultStartBlockIndex: bigint,
     slackBot: SlackBot | null,
 ) {
@@ -136,6 +137,7 @@ export async function processDownstreamEvents(
                         networkId: upstreamNetworkId,
                         genesisHash: upstreamGenesisHash,
                         startNonce: upstreamNextTxNonce,
+                        ncgMinter: upstreamNcgMinter,
                     },
                     {
                         account: downstreamAccount,
