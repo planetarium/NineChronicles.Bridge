@@ -45,6 +45,18 @@ export async function getAssetTransferredEvents(
         const { txStatus } = await headlessGraphQLClient.getTransactionResult(
             event.txId,
         );
+
+        try {
+            Address.fromHex(event.memo, true);
+        } catch (e) {
+            console.error(
+                `Skip ${event.txId} because failed to parse`,
+                event.memo,
+                e,
+            );
+            continue;
+        }
+
         if (txStatus === "SUCCESS") {
             successEvents.push(event);
         }
