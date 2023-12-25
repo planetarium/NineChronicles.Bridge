@@ -47,6 +47,8 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                         // https://formidable.com/open-source/urql/docs/basics/errors/
                         // This automatically distinguish, log, process Network / GQL error.
                         if (error.networkError) {
+                            console.log(error);
+                            console.log(error.networkError);
                             const fallback = this.getEndpoint();
                             console.log(`Fallback RPC: ${fallback}`);
                             const context = {
