@@ -1,4 +1,4 @@
-query GetBlockHash($index: Long!) {
+query GetBlockHash($index: ID!) {
   chainQuery {
     blockQuery {
       block(index: $index) {
