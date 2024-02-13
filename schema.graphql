@@ -1076,10 +1076,8 @@ type Currency {
   totalSupplyTrackable: Boolean!
 
   # The deterministic hash derived from other fields.
-  hash: HashDigestSHA1!
+  hash: ByteString!
 }
-
-scalar HashDigestSHA1
 
 type FungibleItemGarageWithAddressType {
   fungibleItemId: String
@@ -1260,12 +1258,12 @@ type BlockQuery {
     excludeEmptyTxs: Boolean = false
     miner: Address
   ): [Block!]!
-  block(hash: BlockHash, index: Long): Block
+  block(hash: ID, index: ID): Block
 }
 
 type Block {
   # A block's hash.
-  hash: BlockHash!
+  hash: ID!
 
   # The height of the block.
   index: Long!
@@ -1281,7 +1279,7 @@ type Block {
   timestamp: DateTimeOffset!
 
   # The hash of the resulting states after evaluating transactions and a block action (if exists)
-  stateRootHash: HashDigestSHA256!
+  stateRootHash: ByteString!
 
   # The digital signature of the whole block content (except for hash, which is derived from the signature and other contents)
   signature: ByteString
@@ -1305,21 +1303,17 @@ type Block {
     @deprecated(reason: "Block does not have Nonce field in PBFT.")
 
   # The hash of PreEvaluationBlock.
-  preEvaluationHash: HashDigestSHA256!
+  preEvaluationHash: ByteString!
 }
-
-scalar BlockHash
 
 scalar PublicKey
 
 # The `DateTimeOffset` scalar type represents a date, time and offset from UTC. `DateTimeOffset` expects timestamps to be formatted in accordance with the [ISO-8601](https://en.wikipedia.org/wiki/ISO_8601) standard.
 scalar DateTimeOffset
 
-scalar HashDigestSHA256
-
 type Transaction {
   # A unique identifier derived from this transaction content.
-  id: TxId!
+  id: ID!
 
   # The number of previous transactions committed by the signer of this tx.
   nonce: Long!
@@ -1368,7 +1362,7 @@ type BlockCommit {
   round: Int!
 
   # The hash of the block which contains block commit.
-  blockHash: BlockHash!
+  blockHash: ID!
 
   # Total votes of the block commit.
   votes: [Vote!]!
@@ -1402,17 +1396,19 @@ scalar VoteFlag
 type TransactionQuery {
   transactions(
     signer: Address
+    involvedAddress: Address
     desc: Boolean = false
     offset: Int = 0
     limit: Int
   ): [Transaction!]!
   stagedTransactions(
     signer: Address
+    involvedAddress: Address
     desc: Boolean = false
     offset: Int = 0
     limit: Int
   ): [Transaction!]!
-  transaction(id: TxId!): Transaction
+  transaction(id: ID): Transaction
   unsignedTransaction(
     # The hexadecimal string of public key for Transaction.
     publicKey: String!
@@ -1438,11 +1434,11 @@ type TransactionQuery {
   ): String!
   transactionResult(
     # transaction id.
-    txId: TxId!
-  ): TxResult!
+    txId: ID!
+  ): TxResultType!
 }
 
-type TxResult {
+type TxResultType {
   # The transaction status.
   txStatus: TxStatus!
 
@@ -1453,10 +1449,10 @@ type TxResult {
   blockHash: String
 
   # The input state's root hash which the target transaction executed.
-  inputState: HashDigestSHA256
+  inputState: HashDigest_SHA256
 
   # The output state's root hash which the target transaction executed.
-  outputState: HashDigestSHA256
+  outputState: HashDigest_SHA256
 
   # The name of exception. (when only failed)
   exceptionNames: [String]
@@ -1470,35 +1466,37 @@ enum TxStatus {
   INCLUDED
 }
 
+scalar HashDigest_SHA256
+
 type LibplanetStateQuery {
   world(blockHash: BlockHash, stateRootHash: HashDigestSHA256): WorldState!
 
   # Retrieves states from the legacy account.
   states(
     addresses: [Address!]!
-    offsetBlockHash: BlockHash
-    offsetStateRootHash: HashDigestSHA256
+    offsetBlockHash: ID
+    offsetStateRootHash: HashDigest_SHA256
   ): [BencodexValue]!
 
   # Retrieves balance from the legacy account.
   balance(
     owner: Address!
     currency: CurrencyInput!
-    offsetBlockHash: BlockHash
-    offsetStateRootHash: HashDigestSHA256
+    offsetBlockHash: ID
+    offsetStateRootHash: HashDigest_SHA256
   ): FungibleAssetValue!
 
   # Retrieves total supply from the legacy account.
   totalSupply(
     currency: CurrencyInput!
-    offsetBlockHash: BlockHash
-    offsetStateRootHash: HashDigestSHA256
+    offsetBlockHash: ID
+    offsetStateRootHash: HashDigest_SHA256
   ): FungibleAssetValue
 
   # Retrieves validator set from the legacy account.
   validators(
-    offsetBlockHash: BlockHash
-    offsetStateRootHash: HashDigestSHA256
+    offsetBlockHash: ID
+    offsetStateRootHash: HashDigest_SHA256
   ): [Validator!]
 }
 
@@ -1521,6 +1519,8 @@ type WorldState {
     addresses: [Address!]!
   ): [AccountState!]!
 }
+
+scalar HashDigestSHA256
 
 # Represents a raw account state.  This is meant to represent a raw storage state void of any application layer context and/or logic.  In particular, this does not deal with currency or fungible asset value directly, which requires additional information on currency such as its ticker and possible minters, etc. while interpreting the data retrieved with the provided contextual information. The same is true for validator sets.
 type AccountState {
@@ -1580,6 +1580,10 @@ type IValue {
   # A JSON representation of the bencodex value
   json: String!
 }
+
+scalar HashDigestSHA1
+
+scalar BlockHash
 
 scalar BencodexValue
 
@@ -1732,11 +1736,11 @@ type TransactionHeadlessQuery {
   transactionResult(
     # transaction id.
     txId: TxId!
-  ): TxResult!
+  ): TxResultType!
   transactionResults(
     # transaction ids.
     txIds: [TxId]!
-  ): [TxResult]!
+  ): [TxResultType]!
   unsignedTransaction(
     # The hexadecimal string of public key for Transaction.
     publicKey: String!
@@ -2753,7 +2757,7 @@ type TipChanged {
 
 type TxType {
   transaction: TransactionType!
-  txResult: TxResult
+  txResult: TxResultType
 }
 
 type PreloadStateType {

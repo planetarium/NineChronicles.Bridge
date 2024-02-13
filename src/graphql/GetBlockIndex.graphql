@@ -1,4 +1,4 @@
-query GetBlockIndex($hash: BlockHash!) {
+query GetBlockIndex($hash: ID!) {
   chainQuery {
     blockQuery {
       block(hash: $hash) {
