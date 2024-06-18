@@ -47,7 +47,7 @@ export function ncscanTxLinkGetter(tx: TxIdWithNetwork): string {
     }
 
     if (network === "heimdall-internal") {
-        return `https://heimdall-internal.9cscan.com/tx/${txId}`;
+        return `https://internal-heimdall.9cscan.com/tx/${txId}`;
     }
 
     if (network === "idun") {
