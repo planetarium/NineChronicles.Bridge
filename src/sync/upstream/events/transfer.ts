@@ -3,11 +3,11 @@ import { FungibleAssetValue, signTx } from "@planetarium/tx";
 import { ResponseType } from "@prisma/client";
 import { encodeMintAssetsAction } from "../../../actions/mint";
 import { SUPER_FUTURE_DATETIME, additionalGasTxProperties } from "../../../tx";
-import { AssetTransferredEvent } from "../../../types/asset-transferred-event";
 import { BridgeResponse } from "../../types";
+import { ValidatedAssetTransferredEvent } from "../../../events/assets-transferred";
 
 export async function responseTransactionsFromTransferEvents(
-    events: AssetTransferredEvent[],
+    events: ValidatedAssetTransferredEvent[],
     account: Account,
     networkId: string,
     genesisHash: Uint8Array,
@@ -17,7 +17,7 @@ export async function responseTransactionsFromTransferEvents(
     const responses: BridgeResponse[] = [];
     let nonce = startNonce;
 
-    for (const { txId, amount, memo: recipient } of events) {
+    for (const { txId, amount, targetAddress: recipient } of events) {
         const amountToMint: FungibleAssetValue = {
             currency: {
                 ...amount.currency,

@@ -7,6 +7,6 @@ export interface GarageUnloadEvent {
     txId: TxId;
     signer: string;
     fungibleAssetValues: [Address, FungibleAssetValue][];
-    fungibleItems: [Address, FungibleItemId, number][];
+    fungibleItems: [Address, FungibleItemId, bigint][];
     memo: string | null;
 }

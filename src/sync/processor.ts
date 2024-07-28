@@ -8,7 +8,9 @@ export class Processor {
     constructor(
         private readonly tasks: Task[],
         private readonly intervalTasks: [number, Task][],
-    ) {}
+    ) {
+        this.running = false;
+    }
 
     async start(): Promise<void> {
         this.running = true;

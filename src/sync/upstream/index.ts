@@ -13,7 +13,7 @@ import { BridgeErrorEvent } from "../../slack/messages/bridge-error-event";
 import { BridgeEvent } from "../../slack/messages/bridge-event";
 import { delay } from "../../utils/delay";
 import { getTxId } from "../../utils/tx";
-import { dbTypeToSlackType, getNextBlockIndex, getNextTxNonce } from "../utils";
+import { getNextBlockIndex, getNextTxNonce } from "../utils";
 import { responseTransactionsFromGarageEvents } from "./events/garage";
 import { responseTransactionsFromTransferEvents } from "./events/transfer";
 
@@ -33,7 +33,7 @@ export async function processUpstreamEvents(
         await downstreamGQLClient.getGenesisHash(),
         "hex",
     );
-    const [isSkipped, responseTransactions, unloadGarageEventsWithInvalidMemo] =
+    const [isSkipped, responseTransactions] =
         await client.$transaction(
             async (tx) => {
                 const nextBlockIndex = await getNextBlockIndex(
@@ -77,14 +77,6 @@ export async function processUpstreamEvents(
                     avatarAddress,
                     Number(nextBlockIndex),
                 );
-                const unloadGarageEventsWithValidMemo =
-                    unloadGarageEvents.filter((ev) =>
-                        isValidParsedMemo(ev.parsedMemo),
-                    );
-                const unloadGarageEventsWithInvalidMemo =
-                    unloadGarageEvents.filter(
-                        (ev) => !isValidParsedMemo(ev.parsedMemo),
-                    );
                 const transferAssetEvents = await getAssetTransferredEvents(
                     upstreamGQLClient,
                     agentAddress,
@@ -110,7 +102,7 @@ export async function processUpstreamEvents(
 
                 await tx.requestTransaction.createMany({
                     data: [
-                        ...unloadGarageEventsWithValidMemo.map((ev) => {
+                        ...unloadGarageEvents.map((ev) => {
                             return {
                                 blockIndex: nextBlockIndex,
                                 networkId: upstreamNetworkId,
@@ -153,7 +145,7 @@ export async function processUpstreamEvents(
 
                 const responseTransactions = [
                     ...(await responseTransactionsFromGarageEvents(
-                        unloadGarageEventsWithValidMemo,
+                        unloadGarageEvents,
                         downstreamAccount,
                         downstreamNetworkId,
                         downstreamGenesisHash,
@@ -169,7 +161,7 @@ export async function processUpstreamEvents(
                         downstreamNetworkId,
                         downstreamGenesisHash,
                         downstreamNextTxNonce +
-                            BigInt(unloadGarageEventsWithValidMemo.length),
+                            BigInt(unloadGarageEvents.length),
                     )),
                 ];
 
@@ -207,7 +199,6 @@ export async function processUpstreamEvents(
                 return [
                     false,
                     responseTransactionsDBPayload,
-                    unloadGarageEventsWithInvalidMemo,
                 ];
             },
             {
@@ -222,46 +213,12 @@ export async function processUpstreamEvents(
     for (const responseTransaction of responseTransactions) {
         await slackBot?.sendMessage(
             new BridgeEvent(
-                dbTypeToSlackType(responseTransaction.type),
+                responseTransaction.type,
                 [upstreamNetworkId, responseTransaction.requestTransactionId],
                 [responseTransaction.networkId, responseTransaction.id],
                 "NOT_SUPPORTED_FOR_RDB",
                 "NOT_SUPPORTED_FOR_RDB",
             ),
         );
-    }
-
-    for (const ev of unloadGarageEventsWithInvalidMemo) {
-        try {
-            await slackBot?.sendMessage(
-                new BridgeErrorEvent(
-                    [upstreamNetworkId, ev.txId],
-                    new Error(`INVALID_MEMO: ${JSON.stringify(ev.parsedMemo)}`),
-                ),
-            );
-        } catch (e) {
-            console.error("[sync][upstream] Failed to send slack message", e);
-        }
-    }
-}
-
-function isValidParsedMemo(
-    parsedMemo: ValidatedGarageUnloadEvent["parsedMemo"],
-): boolean {
-    return (
-        checkError(() => Address.fromHex(parsedMemo.agentAddress, true)) &&
-        checkError(() => Address.fromHex(parsedMemo.avatarAddress, true)) &&
-        (typeof parsedMemo.memo === "string" || parsedMemo.memo === null)
-    );
-}
-
-// If the given function throws error, it returns false.
-// If not, it returns true.
-function checkError(fn: () => void) {
-    try {
-        fn();
-        return true;
-    } catch {
-        return false;
     }
 }

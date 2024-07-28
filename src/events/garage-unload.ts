@@ -4,9 +4,9 @@ import { GarageUnloadEvent } from "../types/garage-unload-event";
 
 export type ValidatedGarageUnloadEvent = Omit<GarageUnloadEvent, "memo"> & {
     parsedMemo: {
-        agentAddress: string;
-        avatarAddress: string;
-        memo: string;
+        agentAddress: Address;
+        avatarAddress: Address;
+        memo: string | null;
     };
 };
 
@@ -15,7 +15,7 @@ export async function getGarageUnloadEvents(
     agentAddress: Address,
     avatarAddress: Address,
     blockIndex: number,
-) {
+): Promise<ValidatedGarageUnloadEvent[]> {
     const planetID = headlessGraphQLClient.getPlanetID();
     const blockHash = await headlessGraphQLClient.getBlockHash(blockIndex);
     const events = await headlessGraphQLClient.getGarageUnloadEvents(
@@ -42,6 +42,12 @@ export async function getGarageUnloadEvents(
 
         let parsedMemo = null;
         try {
+            if (event.memo === null) {
+                console.error(
+                    `Skip ${event.txId} because event.memo field is required but null.`
+                );
+                continue;
+            }
             parsedMemo = parseMemo(event.memo);
         } catch (e) {
             console.error(
@@ -64,15 +70,19 @@ export async function getGarageUnloadEvents(
 }
 
 function parseMemo(memo: string): {
-    agentAddress: string;
-    avatarAddress: string;
-    memo: string;
+    agentAddress: Address;
+    avatarAddress: Address;
+    memo: string | null;
 } {
     const parsed = JSON.parse(memo);
 
+    if (typeof parsed[2] !== "string" && parsed[2] !== null) {
+        throw new TypeError();
+    }
+
     return {
-        agentAddress: parsed[0],
-        avatarAddress: parsed[1],
+        agentAddress: Address.fromHex(parsed[0], true),
+        avatarAddress: Address.fromHex(parsed[1], true),
         memo: parsed[2],
     };
 }

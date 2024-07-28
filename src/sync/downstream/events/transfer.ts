@@ -9,9 +9,10 @@ import { SUPER_FUTURE_DATETIME, additionalGasTxProperties } from "../../../tx";
 import { AssetTransferredEvent } from "../../../types/asset-transferred-event";
 import { SignedTx } from "../../../types/signed-tx";
 import { BridgeResponse } from "../../types";
+import { ValidatedAssetTransferredEvent } from "../../../events/assets-transferred";
 
 export async function responseTransactionsFromTransferEvents(
-    events: AssetTransferredEvent[],
+    events: ValidatedAssetTransferredEvent[],
     {
         account: upstreamAccount,
         networkId: upstreamNetworkId,
@@ -43,7 +44,7 @@ export async function responseTransactionsFromTransferEvents(
     let upstreamNonce = upstreamStartNonce;
     let downstreamNonce = downstreamStartNonce;
 
-    for (const { txId, amount, memo } of events) {
+    for (const { txId, amount, targetAddress: recipient } of events) {
         const burnAssetAction = encodeBurnAssetAction(
             downstreamSignerAddress,
             amount,
@@ -61,7 +62,7 @@ export async function responseTransactionsFromTransferEvents(
                   }
                 : amount;
         const transferAssetAction = encodeTransferAssetAction(
-            Address.fromHex(memo, true),
+            recipient,
             upstreamSignerAddress,
             transferAssetAmount,
             null,

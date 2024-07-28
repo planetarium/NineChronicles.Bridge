@@ -10,36 +10,34 @@ export class BridgeErrorEvent implements ISlackMessage {
     ) {}
 
     render() {
-        if (this.error) {
-            return {
-                text: "Bridge failed",
-                attachments: [
-                    {
-                        title: "Tx",
-                        text: ncscanTxLinkGetter(this.tx),
-                    },
-                    {
-                        title: "Type",
-                        color: "#ff0033",
-                        text: this.error.constructor.name,
-                    },
-                    {
-                        title: "Name",
-                        color: "#ff0033",
-                        text: this.error.name,
-                    },
-                    {
-                        title: "Message",
-                        color: "#ff0033",
-                        text: this.error.message,
-                    },
-                    {
-                        title: "Stack",
-                        color: "#ff0033",
-                        text: this.error.stack,
-                    },
-                ],
-            };
-        }
+        return {
+            text: "Bridge failed",
+            attachments: [
+                {
+                    title: "Tx",
+                    text: ncscanTxLinkGetter(this.tx),
+                },
+                {
+                    title: "Type",
+                    color: "#ff0033",
+                    text: this.error.constructor.name,
+                },
+                {
+                    title: "Name",
+                    color: "#ff0033",
+                    text: this.error.name,
+                },
+                {
+                    title: "Message",
+                    color: "#ff0033",
+                    text: this.error.message,
+                },
+                {
+                    title: "Stack",
+                    color: "#ff0033",
+                    text: this.error.stack,
+                },
+            ],
+        };
     }
 }
