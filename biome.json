@@ -8,6 +8,6 @@
         "ignore": []
     },
     "files": {
-        "ignore": ["./src/generated/*.ts"]
+        "ignore": ["./src/generated/*.ts", "dist"]
     }
 }
