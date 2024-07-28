@@ -1,6 +1,6 @@
+import { ResponseType } from "@prisma/client";
 import { ISlackMessage, SlackMessageSymbol } from ".";
 import { TxIdWithNetwork, ncscanTxLinkGetter } from "./utils";
-import { ResponseType } from "@prisma/client"
 
 export class BridgeEvent implements ISlackMessage {
     [SlackMessageSymbol] = true as const;

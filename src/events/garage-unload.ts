@@ -44,7 +44,7 @@ export async function getGarageUnloadEvents(
         try {
             if (event.memo === null) {
                 console.error(
-                    `Skip ${event.txId} because event.memo field is required but null.`
+                    `Skip ${event.txId} because event.memo field is required but null.`,
                 );
                 continue;
             }

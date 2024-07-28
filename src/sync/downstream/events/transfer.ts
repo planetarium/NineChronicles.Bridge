@@ -5,11 +5,11 @@ import { ResponseType } from "@prisma/client";
 import { encodeBurnAssetAction } from "../../../actions/burn";
 import { encodeMintAssetsAction } from "../../../actions/mint";
 import { encodeTransferAssetAction } from "../../../actions/transfer";
+import { ValidatedAssetTransferredEvent } from "../../../events/assets-transferred";
 import { SUPER_FUTURE_DATETIME, additionalGasTxProperties } from "../../../tx";
 import { AssetTransferredEvent } from "../../../types/asset-transferred-event";
 import { SignedTx } from "../../../types/signed-tx";
 import { BridgeResponse } from "../../types";
-import { ValidatedAssetTransferredEvent } from "../../../events/assets-transferred";
 
 export async function responseTransactionsFromTransferEvents(
     events: ValidatedAssetTransferredEvent[],

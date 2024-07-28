@@ -2,9 +2,9 @@ import { Account } from "@planetarium/account";
 import { FungibleAssetValue, signTx } from "@planetarium/tx";
 import { ResponseType } from "@prisma/client";
 import { encodeMintAssetsAction } from "../../../actions/mint";
+import { ValidatedAssetTransferredEvent } from "../../../events/assets-transferred";
 import { SUPER_FUTURE_DATETIME, additionalGasTxProperties } from "../../../tx";
 import { BridgeResponse } from "../../types";
-import { ValidatedAssetTransferredEvent } from "../../../events/assets-transferred";
 
 export async function responseTransactionsFromTransferEvents(
     events: ValidatedAssetTransferredEvent[],

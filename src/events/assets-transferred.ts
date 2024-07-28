@@ -3,7 +3,10 @@ import { IHeadlessGraphQLClient } from "../headless-graphql-client";
 import { AssetTransferredEvent } from "../types/asset-transferred-event";
 import { TransactionLocation } from "../types/transaction-location";
 
-export type ValidatedAssetTransferredEvent = Omit<AssetTransferredEvent, "memo"> & {
+export type ValidatedAssetTransferredEvent = Omit<
+    AssetTransferredEvent,
+    "memo"
+> & {
     targetAddress: Address;
 };
 

@@ -1,5 +1,11 @@
 import { Address } from "@planetarium/account";
-import { BencodexDictionary, Dictionary, Value, decode, isDictionary } from "@planetarium/bencodex";
+import {
+    BencodexDictionary,
+    Dictionary,
+    Value,
+    decode,
+    isDictionary,
+} from "@planetarium/bencodex";
 import { Currency, FungibleAssetValue } from "@planetarium/tx";
 import { Client, fetchExchange, mapExchange } from "@urql/core";
 import { retryExchange } from "@urql/exchange-retry";
@@ -42,7 +48,7 @@ export interface IHeadlessGraphQLClient {
 }
 
 function isArray<T>(obj: unknown): obj is T[] {
-    return Array.isArray(obj)
+    return Array.isArray(obj);
 }
 
 export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
@@ -123,13 +129,15 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
 
         return data.transaction.ncTransactions
             .map((tx) => {
-                if (tx === null || tx.actions.length > 1 || tx.actions[0] === null) {
+                if (
+                    tx === null ||
+                    tx.actions.length > 1 ||
+                    tx.actions[0] === null
+                ) {
                     return null;
                 }
 
-                const action = decode(
-                    Buffer.from(tx.actions[0].raw, "hex"),
-                );
+                const action = decode(Buffer.from(tx.actions[0].raw, "hex"));
                 if (!isDictionary(action)) {
                     return null;
                 }
@@ -144,7 +152,8 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     return null;
                 }
 
-                if (!(payload[0] instanceof Uint8Array) ||
+                if (
+                    !(payload[0] instanceof Uint8Array) ||
                     !(isArray<Value>(payload[1]) || payload[1] === null) ||
                     !(isArray<Value>(payload[2]) || payload[2] === null) ||
                     !(typeof payload[3] === "string" || payload[3] === null)
@@ -152,14 +161,26 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
                     return null;
                 }
 
-                function isValidFungibleAssetValuePayload(x: Value): x is [Uint8Array, [BencodexDictionary, bigint]] {
-                    return isArray<Value>(x) && x[0] instanceof Uint8Array &&
-                        isArray<Value>(x[1]) && isDictionary(x[1][0]) && typeof x[1][1] === "bigint";
+                function isValidFungibleAssetValuePayload(
+                    x: Value,
+                ): x is [Uint8Array, [BencodexDictionary, bigint]] {
+                    return (
+                        isArray<Value>(x) &&
+                        x[0] instanceof Uint8Array &&
+                        isArray<Value>(x[1]) &&
+                        isDictionary(x[1][0]) &&
+                        typeof x[1][1] === "bigint"
+                    );
                 }
 
-                function isValidFungibleItemPayload(x: Value): x is [Uint8Array, bigint] {
-                    return isArray<Value>(x) && x[0] instanceof Uint8Array &&
-                        typeof x[1] === "bigint";
+                function isValidFungibleItemPayload(
+                    x: Value,
+                ): x is [Uint8Array, bigint] {
+                    return (
+                        isArray<Value>(x) &&
+                        x[0] instanceof Uint8Array &&
+                        typeof x[1] === "bigint"
+                    );
                 }
 
                 const recipientAvatarAddress = Address.fromBytes(payload[0]);
@@ -208,7 +229,9 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     }
 
     async getBlockIndex(blockHash: BlockHash): Promise<number> {
-        const response = await this._client.query(GetBlockIndexDocument, { hash: blockHash });
+        const response = await this._client.query(GetBlockIndexDocument, {
+            hash: blockHash,
+        });
         const block = response.data?.chainQuery.blockQuery?.block;
         if (!block) {
             throw new Error("Failed to fetch data through GraphQL.");
@@ -231,9 +254,9 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         const response = await this._client.query(GetBlockHashDocument, {
             index,
         });
-        const block = response.data?.chainQuery.blockQuery?.block;   
+        const block = response.data?.chainQuery.blockQuery?.block;
         if (!block) {
-            throw new Error("Failed to fetch data through GraphQL."); 
+            throw new Error("Failed to fetch data through GraphQL.");
         }
 
         return block.hash;
@@ -247,17 +270,17 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
             blockIndex,
         });
 
-
         const transactions = response.data?.transaction.ncTransactions;
         if (!transactions) {
             throw new Error("Invalid operation.");
         }
 
-        return transactions.filter(x => x !== null)
-            .filter(x => x.actions.every(v => v !== null))
+        return transactions
+            .filter((x) => x !== null)
+            .filter((x) => x.actions.every((v) => v !== null))
             .map((tx) => {
                 const txId = tx.id;
-                const actions = tx.actions.filter(x => x !== null);
+                const actions = tx.actions.filter((x) => x !== null);
                 const action = decode(
                     Buffer.from(actions[0].raw, "hex"),
                 ) as Dictionary;
@@ -294,7 +317,9 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     }
 
     async getNextTxNonce(address: string): Promise<number> {
-        const response = await this._client.query(GetNextTxNonceDocument, { address });
+        const response = await this._client.query(GetNextTxNonceDocument, {
+            address,
+        });
         if (!response.data) {
             throw new Error("Failed to fetch data through GraphQL.");
         }
@@ -318,19 +343,24 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     }
 
     async stageTransaction(payload: string): Promise<string> {
-        const response = await this._client.mutation(StageTransactionDocument, { payload });
+        const response = await this._client.mutation(StageTransactionDocument, {
+            payload,
+        });
         const txid = response.data?.stageTransaction;
         if (!txid) {
-            throw new Error("Failed to stage transaction."); 
+            throw new Error("Failed to stage transaction.");
         }
 
         return txid;
     }
 
     async getTransactionResult(txId: TxId): Promise<TransactionResult> {
-        const response = await this._client.query(GetTransactionResultDocument, { txId });
+        const response = await this._client.query(
+            GetTransactionResultDocument,
+            { txId },
+        );
         if (!response.data) {
-            throw new Error("Failed to fetch data through GraphQL."); 
+            throw new Error("Failed to fetch data through GraphQL.");
         }
 
         return response.data.transaction.transactionResult;
