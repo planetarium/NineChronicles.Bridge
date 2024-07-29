@@ -6,7 +6,7 @@ export function encodeTransferAssetAction(
     recipient: Address,
     sender: Address,
     amount: FungibleAssetValue,
-    memo: string,
+    memo: string | null,
 ) {
     return new RecordView(
         {

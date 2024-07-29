@@ -1,13 +1,12 @@
+import { ResponseType } from "@prisma/client";
 import { ISlackMessage, SlackMessageSymbol } from ".";
 import { TxIdWithNetwork, ncscanTxLinkGetter } from "./utils";
-
-export type BridgeEventActionType = "BURN" | "MINT" | "TRANSFER";
 
 export class BridgeEvent implements ISlackMessage {
     [SlackMessageSymbol] = true as const;
 
     constructor(
-        private readonly actionType: "BURN" | "MINT" | "TRANSFER",
+        private readonly actionType: ResponseType,
         private readonly requestTx: TxIdWithNetwork,
         private readonly responseTx: TxIdWithNetwork,
         private readonly sender: string,

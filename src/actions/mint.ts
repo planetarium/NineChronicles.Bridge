@@ -4,30 +4,30 @@ import { FungibleAssetValue, encodeCurrency } from "@planetarium/tx";
 import { FungibleItemId } from "../types/fungible-item-id";
 
 export interface IFungibleAssetValues {
-    recipient: string;
+    recipient: Address;
     amount: FungibleAssetValue;
 }
 
 export interface IFungibleItems {
-    recipient: string;
+    recipient: Address;
     fungibleItemId: FungibleItemId;
-    count: number;
+    count: bigint;
 }
 
 function encodeMintSpec(value: IFungibleAssetValues | IFungibleItems): Value {
     if ((value as IFungibleAssetValues).amount !== undefined) {
         const favs = value as IFungibleAssetValues;
         return [
-            Address.fromHex(favs.recipient, true).toBytes(),
+            favs.recipient.toBytes(),
             [encodeCurrency(favs.amount.currency), favs.amount.rawValue],
             null,
         ];
     } else {
         const fis = value as IFungibleItems;
         return [
-            Address.fromHex(fis.recipient, true).toBytes(),
+            fis.recipient.toBytes(),
             null,
-            [Buffer.from(fis.fungibleItemId, "hex"), BigInt(fis.count)],
+            [Buffer.from(fis.fungibleItemId, "hex"), fis.count],
         ];
     }
 }

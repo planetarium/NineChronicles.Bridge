@@ -1,5 +1,11 @@
 import { Address } from "@planetarium/account";
-import { BencodexDictionary, Dictionary, decode } from "@planetarium/bencodex";
+import {
+    BencodexDictionary,
+    Dictionary,
+    Value,
+    decode,
+    isDictionary,
+} from "@planetarium/bencodex";
 import { Currency, FungibleAssetValue } from "@planetarium/tx";
 import { Client, fetchExchange, mapExchange } from "@urql/core";
 import { retryExchange } from "@urql/exchange-retry";
@@ -39,6 +45,10 @@ export interface IHeadlessGraphQLClient {
     getGenesisHash(): Promise<string>;
     stageTransaction(payload: string): Promise<string>;
     getTransactionResult(txId: TxId): Promise<TransactionResult>;
+}
+
+function isArray<T>(obj: unknown): obj is T[] {
+    return Array.isArray(obj);
 }
 
 export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
@@ -113,30 +123,88 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
             startingBlockIndex: blockIndex,
         });
 
+        if (!data?.transaction?.ncTransactions) {
+            throw new Error("Failed to fetch data through GraphQL.");
+        }
+
         return data.transaction.ncTransactions
             .map((tx) => {
-                const action = decode(
-                    Buffer.from(tx.actions[0].raw, "hex"),
-                ) as Dictionary;
-                const values = (action.get("values") as Dictionary).get("l");
-                const recipientAvatarAddress = Address.fromBytes(values[0]);
+                if (
+                    tx === null ||
+                    tx.actions.length > 1 ||
+                    tx.actions[0] === null
+                ) {
+                    return null;
+                }
+
+                const action = decode(Buffer.from(tx.actions[0].raw, "hex"));
+                if (!isDictionary(action)) {
+                    return null;
+                }
+
+                const values = action.get("values");
+                if (!isDictionary(values)) {
+                    return null;
+                }
+
+                const payload = values.get("l");
+                if (!isArray<Value>(payload)) {
+                    return null;
+                }
+
+                if (
+                    !(payload[0] instanceof Uint8Array) ||
+                    !(isArray<Value>(payload[1]) || payload[1] === null) ||
+                    !(isArray<Value>(payload[2]) || payload[2] === null) ||
+                    !(typeof payload[3] === "string" || payload[3] === null)
+                ) {
+                    return null;
+                }
+
+                function isValidFungibleAssetValuePayload(
+                    x: Value,
+                ): x is [Uint8Array, [BencodexDictionary, bigint]] {
+                    return (
+                        isArray<Value>(x) &&
+                        x[0] instanceof Uint8Array &&
+                        isArray<Value>(x[1]) &&
+                        isDictionary(x[1][0]) &&
+                        typeof x[1][1] === "bigint"
+                    );
+                }
+
+                function isValidFungibleItemPayload(
+                    x: Value,
+                ): x is [Uint8Array, bigint] {
+                    return (
+                        isArray<Value>(x) &&
+                        x[0] instanceof Uint8Array &&
+                        typeof x[1] === "bigint"
+                    );
+                }
+
+                const recipientAvatarAddress = Address.fromBytes(payload[0]);
                 const fungibleAssetValues: [Address, FungibleAssetValue][] = (
-                    values[1] ?? []
-                ).map((args) => [
-                    Address.fromBytes(args[0]),
-                    {
-                        currency: decodeCurrency(args[1][0]),
-                        rawValue: args[1][1],
-                    },
-                ]);
-                const fungibleItems: [Address, string, number][] = (
-                    values[2] ?? []
-                ).map((args) => [
-                    recipientAvatarAddress,
-                    Buffer.from(args[0]).toString("hex"),
-                    args[1],
-                ]);
-                const memo = values[3];
+                    payload[1] ?? []
+                )
+                    .filter(isValidFungibleAssetValuePayload)
+                    .map((args: [Uint8Array, [BencodexDictionary, bigint]]) => [
+                        Address.fromBytes(args[0]),
+                        {
+                            currency: decodeCurrency(args[1][0]),
+                            rawValue: args[1][1],
+                        },
+                    ]);
+                const fungibleItems: [Address, string, bigint][] = (
+                    payload[2] ?? []
+                )
+                    .filter(isValidFungibleItemPayload)
+                    .map((args) => [
+                        recipientAvatarAddress,
+                        Buffer.from(args[0]).toString("hex"),
+                        args[1],
+                    ]);
+                const memo = payload[3];
 
                 const filteredFungibleAssetValues = fungibleAssetValues.filter(
                     (fav) =>
@@ -161,37 +229,60 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     }
 
     async getBlockIndex(blockHash: BlockHash): Promise<number> {
-        return (
-            await this._client.query(GetBlockIndexDocument, { hash: blockHash })
-        ).data.chainQuery.blockQuery.block.index;
+        const response = await this._client.query(GetBlockIndexDocument, {
+            hash: blockHash,
+        });
+        const block = response.data?.chainQuery.blockQuery?.block;
+        if (!block) {
+            throw new Error("Failed to fetch data through GraphQL.");
+        }
+
+        return block.index;
     }
 
     async getTipIndex(): Promise<number> {
-        return (await this._client.query(GetTipIndexDocument, {})).data
-            .nodeStatus.tip.index;
+        const response = await this._client.query(GetTipIndexDocument, {});
+        const tipIndex = response.data?.nodeStatus.tip.index;
+        if (!tipIndex) {
+            throw new Error("Failed to fetch data through GraphQL.");
+        }
+
+        return tipIndex;
     }
 
     async getBlockHash(index: number): Promise<BlockHash> {
-        return (
-            await this._client.query(GetBlockHashDocument, {
-                index,
-            })
-        ).data.chainQuery.blockQuery.block.hash;
+        const response = await this._client.query(GetBlockHashDocument, {
+            index,
+        });
+        const block = response.data?.chainQuery.blockQuery?.block;
+        if (!block) {
+            throw new Error("Failed to fetch data through GraphQL.");
+        }
+
+        return block.hash;
     }
 
     async getAssetTransferredEvents(
         blockIndex: number,
         recipient: Address,
     ): Promise<AssetTransferredEvent[]> {
-        const data = await this._client.query(GetAssetTransferredDocument, {
+        const response = await this._client.query(GetAssetTransferredDocument, {
             blockIndex,
         });
 
-        return data.data.transaction.ncTransactions
+        const transactions = response.data?.transaction.ncTransactions;
+        if (!transactions) {
+            throw new Error("Invalid operation.");
+        }
+
+        return transactions
+            .filter((x) => x !== null)
+            .filter((x) => x.actions.every((v) => v !== null))
             .map((tx) => {
                 const txId = tx.id;
+                const actions = tx.actions.filter((x) => x !== null);
                 const action = decode(
-                    Buffer.from(tx.actions[0].raw, "hex"),
+                    Buffer.from(actions[0].raw, "hex"),
                 ) as Dictionary;
                 const values = action.get("values") as BencodexDictionary;
                 const sender = Address.fromBytes(
@@ -226,35 +317,65 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
     }
 
     async getNextTxNonce(address: string): Promise<number> {
-        return (await this._client.query(GetNextTxNonceDocument, { address }))
-            .data.nextTxNonce;
+        const response = await this._client.query(GetNextTxNonceDocument, {
+            address,
+        });
+        if (!response.data) {
+            throw new Error("Failed to fetch data through GraphQL.");
+        }
+
+        return response.data.nextTxNonce;
     }
 
     async getGenesisHash(): Promise<string> {
-        return (
-            this._planet.genesisHash ??
-            (await this._client.query(GetGenesisHashDocument, {})).data
-                .chainQuery.blockQuery.block.hash
-        );
+        if (this._planet.genesisHash) {
+            return this._planet.genesisHash;
+        }
+
+        const response = await this._client.query(GetGenesisHashDocument, {});
+
+        const hash = response.data?.chainQuery.blockQuery?.block?.hash;
+        if (!hash) {
+            throw new Error("Failed to fetch data through GraphQL.");
+        }
+
+        return hash;
     }
 
     async stageTransaction(payload: string): Promise<string> {
-        return (
-            await this._client.mutation(StageTransactionDocument, { payload })
-        ).data.stageTransaction;
+        const response = await this._client.mutation(StageTransactionDocument, {
+            payload,
+        });
+        const txid = response.data?.stageTransaction;
+        if (!txid) {
+            throw new Error("Failed to stage transaction.");
+        }
+
+        return txid;
     }
 
     async getTransactionResult(txId: TxId): Promise<TransactionResult> {
-        return (
-            await this._client.query(GetTransactionResultDocument, { txId })
-        ).data.transaction.transactionResult;
+        const response = await this._client.query(
+            GetTransactionResultDocument,
+            { txId },
+        );
+        if (!response.data) {
+            throw new Error("Failed to fetch data through GraphQL.");
+        }
+
+        return response.data.transaction.transactionResult;
     }
 }
 
 function decodeCurrency(bdict: BencodexDictionary): Currency {
     const dpAsHex = (bdict.get("decimalPlaces") as Buffer).toString("hex");
+    const ticker = bdict.get("ticker");
+    if (typeof ticker !== "string") {
+        throw new TypeError("Invalid ticker. Ticker must be typed as string.");
+    }
+
     return {
-        ticker: bdict.get("ticker").valueOf() as string,
+        ticker: ticker,
         decimalPlaces: parseInt(`0x${dpAsHex}`),
         totalSupplyTrackable: false,
         minters: (bdict.get("minters")?.valueOf() as Set<Uint8Array>) ?? null,

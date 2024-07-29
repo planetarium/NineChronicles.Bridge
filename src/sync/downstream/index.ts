@@ -10,13 +10,10 @@ import {
 import { getAssetTransferredEvents } from "../../events/assets-transferred";
 import { IHeadlessGraphQLClient } from "../../headless-graphql-client";
 import { SlackBot } from "../../slack/bot";
-import {
-    BridgeEvent,
-    BridgeEventActionType,
-} from "../../slack/messages/bridge-event";
+import { BridgeEvent } from "../../slack/messages/bridge-event";
 import { delay } from "../../utils/delay";
 import { getTxId } from "../../utils/tx";
-import { dbTypeToSlackType, getNextBlockIndex, getNextTxNonce } from "../utils";
+import { getNextBlockIndex, getNextTxNonce } from "../utils";
 import { responseTransactionsFromTransferEvents } from "./events/transfer";
 
 export async function processDownstreamEvents(
@@ -193,7 +190,7 @@ export async function processDownstreamEvents(
     for (const responseTransaction of responseTransactions) {
         await slackBot?.sendMessage(
             new BridgeEvent(
-                dbTypeToSlackType(responseTransaction.type),
+                responseTransaction.type,
                 [downstreamNetworkId, responseTransaction.requestTransactionId],
                 [responseTransaction.networkId, responseTransaction.id],
                 "NOT_SUPPORTED_FOR_RDB",
