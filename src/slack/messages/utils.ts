@@ -6,9 +6,11 @@ export type Network =
     | "odin"
     | "heimdall"
     | "idun"
+    | "thor"
     | "odin-internal"
     | "heimdall-internal"
-    | "idun-internal";
+    | "idun-internal"
+    | "thor-internal";
 
 export const planetIDToName = (planetID: string) => {
     switch (planetID) {
@@ -18,12 +20,16 @@ export const planetIDToName = (planetID: string) => {
             return "heimdall";
         case "0x000000000002":
             return "idun";
+        case "0x000000000003":
+            return "thor";
         case "0x100000000000":
             return "odin-internal";
         case "0x100000000001":
             return "heimdall-internal";
         case "0x100000000002":
             return "idun-internal";
+        case "0x100000000003":
+            return "thor-internal";
         default:
             return planetID;
     }
@@ -56,6 +62,14 @@ export function ncscanTxLinkGetter(tx: TxIdWithNetwork): string {
 
     if (network === "idun-internal") {
         return `https://idun-internal.9cscan.com/tx/${txId}`;
+    }
+
+    if (network === "thor") {
+        return `https://thor.9cscan.com/tx/${txId}`;
+    }
+
+    if (network === "thor-internal") {
+        return `https://thor.9cscan.com/tx/${txId}`;
     }
 
     throw new TypeError(`Unexpected network type: ${network}`);
