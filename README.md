@@ -4,7 +4,7 @@ As name suggests, this app bridges assets between Nine Chronicles networks.
 ## Prerequisites
 
 - Node.js v19.7.0+
-- yarn 1.22.15+
+- yarn 4.5.1+
 
 ## Build and Run
 ```bash
