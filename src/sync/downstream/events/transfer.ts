@@ -51,6 +51,13 @@ export async function responseTransactionsFromTransferEvents(
             txId,
         );
 
+        if (amount.currency.ticker !== "NCG") {
+            console.debug(
+                `[sync][downstream] skip ${txId} because it transfers ${amount.currency.ticker} not NCG.`,
+            );
+            continue;
+        }
+
         const transferAssetAmount =
             amount.currency.ticker === "NCG"
                 ? {
