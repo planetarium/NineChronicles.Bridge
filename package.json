@@ -1,6 +1,7 @@
 {
-  "name": "araya",
-  "version": "1.0.0",
+  "name": "9c-relay-bridge",
+  "version": "0.0.0",
+  "private": true,
   "scripts": {
     "compile": "prisma generate; graphql-codegen; tsc",
     "start": "npx tsx ./src/index.ts",
@@ -8,7 +9,7 @@
   },
   "type": "commonjs",
   "description": "Custodial tx bridge for Nine Chronicles networks",
-  "repository": "https://github.com/planetarium/araya",
+  "repository": "https://github.com/planetarium/NineChronicles.Bridge",
   "author": "Swen Mun <swen@planetariumhq.com>",
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
