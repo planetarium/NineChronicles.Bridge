@@ -2,7 +2,8 @@ FROM node:22.10 AS build-env
 
 COPY . /build
 WORKDIR /build
-RUN yarn
+RUN corepack enable
+RUN yarn install --immutable
 RUN yarn compile
 RUN wget https://github.com/TryGhost/node-sqlite3/releases/download/v5.1.2/napi-v6-linux-musl-x64.tar.gz && tar -xvzf napi-v6-linux-musl-x64.tar.gz
 RUN mv ./napi-v6-linux-musl-x64 /build/node_modules/sqlite3/lib/binding
