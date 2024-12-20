@@ -1,3 +1,5 @@
+import jwt from "jsonwebtoken";
+import { getEnv } from "./env";
 import { Address } from "@planetarium/account";
 import {
     BencodexDictionary,
@@ -63,8 +65,22 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         this._endpoints = this._planet.rpcEndpoints["headless.gql"];
         this._endpointsIterator = this._endpoints[Symbol.iterator]();
         const endpoint = this.getEndpoint();
+
+        const secretKey = getEnv("NC_JWT_SECRET_KEY");
+        const iss = getEnv("NC_JWT_ISS");
+
         this._client = new Client({
             url: endpoint,
+            fetchOptions: () => {
+                if (secretKey && iss) {
+                    return {
+                        headers: {
+                            Authorization: `Bearer ${this.generateJwtToken(secretKey, iss)}`,
+                        },
+                    };
+                }
+                return {};
+            },
             exchanges: [
                 retryExchange({
                     initialDelayMs: 1000,
@@ -92,6 +108,16 @@ export class HeadlessGraphQLClient implements IHeadlessGraphQLClient {
         console.log(
             `GQL client initialization complete - ${this._planet.id} - ${endpoint}`,
         );
+    }
+
+    private generateJwtToken(secretKey: string, iss: string): string {
+        const payload = {
+            iss: iss,
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) + 300,
+        };
+
+        return jwt.sign(payload, secretKey);
     }
 
     public getPlanetID(): string {
