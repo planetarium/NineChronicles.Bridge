@@ -9,7 +9,7 @@ export const MEAD_CURRENCY = {
 export const additionalGasTxProperties = {
     maxGasPrice: {
         currency: MEAD_CURRENCY,
-        rawValue: 10n ** 18n,
+        rawValue: 10n ** 13n,
     },
     gasLimit: 4n,
 };
