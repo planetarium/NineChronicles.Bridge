@@ -1,0 +1,22 @@
+[
+    {
+        "id": "0x000000000000",
+        "name": "odin",
+        "genesisHash": "4582250d0da33b06779a8475d283d5dd210c683b9b999d74d03fac4f58fa6bce",
+        "rpcEndpoints": {
+            "headless.gql": [
+                "https://9c-main-jwt.nine-chronicles.com/graphql"
+            ]
+        }
+    },
+    {
+        "id": "0x000000000001",
+        "name": "local",
+        "genesisHash": "85ae57a288aeb4ca15623b3f1d48529b50942507e146c6eea7ef986cc51267da",
+        "rpcEndpoints": {
+            "headless.gql": [
+                "http://localhost:31280/graphql"
+            ]
+        }
+    }
+]
