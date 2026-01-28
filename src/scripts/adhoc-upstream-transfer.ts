@@ -1,19 +1,26 @@
+import { randomBytes, randomUUID } from "node:crypto";
 import { Address as LibplanetAddress } from "@planetarium/account";
 import { encode } from "@planetarium/bencodex";
 import { Currency, encodeSignedTx, signTx } from "@planetarium/tx";
-import { Prisma, PrismaClient, RequestCategory, RequestType, ResponseType } from "@prisma/client";
+import {
+    Prisma,
+    PrismaClient,
+    RequestCategory,
+    RequestType,
+    ResponseType,
+} from "@prisma/client";
 import Decimal from "decimal.js";
 import "dotenv/config";
-import { randomBytes, randomUUID } from "node:crypto";
+import { z } from "zod";
 import { getAccountFromEnv } from "../accounts";
+import { encodeTransferAssetAction } from "../actions/transfer";
 import { getEnv, getRequiredEnv } from "../env";
 import { HeadlessGraphQLClient } from "../headless-graphql-client";
 import { PreloadHandler } from "../preload-handler";
-import { encodeTransferAssetAction } from "../actions/transfer";
+import type { PrismaTransactionClient } from "../sync/types";
+import { getNextTxNonce } from "../sync/utils";
 import { SUPER_FUTURE_DATETIME, additionalGasTxProperties } from "../tx";
 import { getTxId } from "../utils/tx";
-import { getNextTxNonce } from "../sync/utils";
-import { z } from "zod";
 
 type Args = {
     to: string;
@@ -27,7 +34,9 @@ export function parseArgs(argv: string[]): Args {
     for (let i = 0; i < argv.length; i += 1) {
         const key = argv[i];
         if (!key.startsWith("--")) {
-            throw new Error(`Invalid argument: ${key}. Expected --key value form.`);
+            throw new Error(
+                `Invalid argument: ${key}. Expected --key value form.`,
+            );
         }
         const value = argv[i + 1];
         if (value === undefined || value.startsWith("--")) {
@@ -64,7 +73,10 @@ export function makeAdhocId(): string {
     return `adhoc:${uuid}`;
 }
 
-export function parseDecimalToRawValue(amount: string, decimals: number): bigint {
+export function parseDecimalToRawValue(
+    amount: string,
+    decimals: number,
+): bigint {
     const d = new Decimal(amount);
     if (!d.isFinite()) {
         throw new Error(`Invalid --amount: ${amount}`);
@@ -122,7 +134,10 @@ export async function main() {
     const currency = buildNcgCurrency(args.decimals, upstreamNcgMinter);
     const rawValue = parseDecimalToRawValue(args.amount, args.decimals);
 
-    const genesisHash = Buffer.from(await upstreamGQLClient.getGenesisHash(), "hex");
+    const genesisHash = Buffer.from(
+        await upstreamGQLClient.getGenesisHash(),
+        "hex",
+    );
 
     const prisma = new PrismaClient();
     await prisma.$connect();
@@ -150,7 +165,7 @@ export async function main() {
 
             const nonce = await prisma.$transaction(async (tx) => {
                 return await getNextTxNonce(
-                    tx as any,
+                    tx as unknown as PrismaTransactionClient,
                     upstreamGQLClient,
                     upstreamAccount,
                 );
@@ -171,12 +186,12 @@ export async function main() {
                 ),
                 signer: signerAddress.toBytes(),
                 timestamp: SUPER_FUTURE_DATETIME,
-                updatedAddresses: new Set([]),
+                updatedAddresses: new Set<Uint8Array>(),
                 actions: [action],
                 ...additionalGasTxProperties,
-            };
+            } satisfies Parameters<typeof signTx>[0];
 
-            const signedTx = await signTx(unsignedTx as any, upstreamAccount);
+            const signedTx = await signTx(unsignedTx, upstreamAccount);
             const serializedTx = encode(encodeSignedTx(signedTx));
             const raw = Buffer.from(serializedTx);
             const txid = getTxId(raw);
@@ -248,4 +263,3 @@ if (require.main === module) {
         process.exitCode = 1;
     });
 }
-
