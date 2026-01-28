@@ -81,6 +81,29 @@ yarn codegen
 yarn start
 ```
 
+## Ad-hoc upstream transfer (enqueue to DB)
+
+This project includes an ad-hoc script that **creates an upstream `transfer_asset` transaction and enqueues it into DB** as a synthetic `RequestTransaction` + `ResponseTransaction` pair. The bridge process will pick it up and stage it via the existing periodic staging loop.
+
+### Usage
+
+```bash
+# Note: pass args after `--` when using yarn scripts
+yarn adhoc:upstream-transfer -- --to <RECIPIENT_ADDRESS_HEX> --amount <DECIMAL_AMOUNT> --decimals 18
+
+# Optional memo
+yarn adhoc:upstream-transfer -- --to <RECIPIENT_ADDRESS_HEX> --amount 12.34 --decimals 18 --memo "hello"
+```
+
+### Notes / Safety
+
+- The script **does NOT stage immediately**; it only enqueues to DB (`enqueue_only`).
+  - If the bridge (`yarn start`) is running, it will stage within ~5 seconds (via `stageTransactionFromDB()`).
+- The script requires that the bridge has scanned at least one block for the upstream network already.
+  - It intentionally reuses the latest scanned `Block.index` for the synthetic request to avoid breaking the sync cursor.
+- `--amount` is a decimal string; the script converts it to raw value using `--decimals`.
+  - If `--amount` has more fractional digits than `--decimals`, it fails.
+
 ## Code Style
 
 This project uses Biome as a code formatter:
