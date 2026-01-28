@@ -2,8 +2,7 @@ name: push docker image
 
 on:
   push:
-    branches:
-      - "main"
+  pull_request:
 
 jobs:
   build_and_push:
@@ -12,14 +11,22 @@ jobs:
       matrix:
         docker:
           - repo: planetariumhq/9c-bridge
-    if: github.ref_type == 'branch'
     runs-on: ubuntu-latest
     steps:
       - name: checkout
         uses: actions/checkout@v4
         with:
           submodules: recursive
+      - name: set image tag
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "IMAGE_TAG=pr-${{ github.event.pull_request.number }}-git-${{ github.sha }}" >> "$GITHUB_ENV"
+          else
+            echo "IMAGE_TAG=git-${{ github.sha }}" >> "$GITHUB_ENV"
+          fi
+
       - name: login
+        if: github.event_name == 'push'
         run: |
           docker login \
             --username '${{ secrets.DOCKER_USERNAME }}' \
@@ -28,9 +35,18 @@ jobs:
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: build-and-push
+      - name: build (pull request)
+        if: github.event_name == 'pull_request'
+        run: |
+          docker buildx build . \
+            --platform linux/amd64 \
+            --tag ${{ matrix.docker.repo }}:${{ env.IMAGE_TAG }} \
+            --load
+
+      - name: build-and-push (push)
+        if: github.event_name == 'push'
         run: |
           docker buildx build . \
             --platform linux/arm64/v8,linux/amd64 \
-            --tag ${{ matrix.docker.repo }}:git-${{ github.sha }} \
+            --tag ${{ matrix.docker.repo }}:${{ env.IMAGE_TAG }} \
             --push

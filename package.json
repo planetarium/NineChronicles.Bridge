@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "compile": "prisma generate; graphql-codegen; tsc",
+    "adhoc:upstream-transfer": "npx tsx ./src/scripts/adhoc-upstream-transfer.ts",
+    "test": "jest",
     "start": "npx tsx ./src/index.ts",
     "codegen": "prisma generate; graphql-codegen"
   },
