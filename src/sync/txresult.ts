@@ -7,28 +7,20 @@ export async function updateTxStatuses(
     client: PrismaClient,
     headlessGQLClients: Record<string, IHeadlessGraphQLClient>,
 ) {
-    const txs = await client.responseTransaction.findMany({
-        select: {
-            id: true,
-            networkId: true,
-        },
-        where: {
-            OR: [
-                {
-                    lastStatus: {
-                        notIn: ["FAILURE", "SUCCESS"],
-                    },
-                },
-                {
-                    lastStatus: null,
-                },
-            ],
-        },
-        orderBy: {
-            statusUpdatedAt: "asc",
-        },
-        take: LIMIT,
-    });
+    // NOTE: Raw SQL on purpose. Prisma's findMany sends the enum values as
+    // bind parameters (CAST($1::text AS "TxResult")), which Postgres cannot
+    // match against the partial index `ix_resptx_pending` (see the comment on
+    // ResponseTransaction in prisma/schema.prisma), so every 5-second poll
+    // became a full seq scan + sort of the table. With literal enum values the
+    // predicate textually matches the index and the planner can use it.
+    // Do not parameterize the enum literals below.
+    const txs = await client.$queryRaw<{ id: string; networkId: string }[]>`
+        SELECT "id", "networkId"
+        FROM "ResponseTransaction"
+        WHERE ("lastStatus" NOT IN ('FAILURE', 'SUCCESS') OR "lastStatus" IS NULL)
+        ORDER BY "statusUpdatedAt" ASC
+        LIMIT ${LIMIT}
+    `;
 
     const txResults = await Promise.all(
         txs.map((tx) => getTxResult(headlessGQLClients, tx)),

@@ -71,6 +71,19 @@ model RequestTransaction {
   executions ResponseTransaction[]
 }
 
+// Production has two hand-made indexes on this table that are intentionally NOT
+// managed by Prisma migrations (Prisma cannot express the partial index, and
+// declaring only one of them here would make `prisma migrate dev` diff against
+// prod). Create them manually in a new environment:
+//
+//   CREATE INDEX IF NOT EXISTS ix_resptx_pending
+//     ON "ResponseTransaction" ("statusUpdatedAt")
+//     WHERE ("lastStatus" NOT IN ('FAILURE', 'SUCCESS') OR "lastStatus" IS NULL);
+//   CREATE INDEX IF NOT EXISTS ix_resptx_network_nonce
+//     ON "ResponseTransaction" ("networkId", nonce DESC);
+//
+// src/sync/txresult.ts relies on ix_resptx_pending and uses raw SQL with literal
+// enum values so the planner can match the partial-index predicate.
 model ResponseTransaction {
   id    String @unique
   nonce BigInt
