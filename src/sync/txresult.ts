@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient, TxResult } from "@prisma/client";
+import { PrismaClient, TxResult } from "@prisma/client";
 import { IHeadlessGraphQLClient } from "../headless-graphql-client";
 
 const LIMIT = 10;
@@ -19,7 +19,7 @@ export async function updateTxStatuses(
         FROM "ResponseTransaction"
         WHERE ("lastStatus" NOT IN ('FAILURE', 'SUCCESS') OR "lastStatus" IS NULL)
         ORDER BY "statusUpdatedAt" ASC
-        LIMIT ${Prisma.raw(String(LIMIT))}
+        LIMIT ${LIMIT}
     `;
 
     const txResults = await Promise.all(
