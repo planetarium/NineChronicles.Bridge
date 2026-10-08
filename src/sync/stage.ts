@@ -21,6 +21,11 @@ export async function stageTransactionFromDB(
                 gte: txNonce,
             },
         },
+        // Stage in nonce order; also lets the planner walk the
+        // ("networkId", nonce) index instead of scanning + sorting.
+        orderBy: {
+            nonce: "asc",
+        },
     });
 
     for (const tx of txs) {
