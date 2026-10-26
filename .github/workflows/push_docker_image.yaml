@@ -6,6 +6,7 @@ on:
 
 jobs:
   build_and_push:
+    if: ${{ !startsWith(github.head_ref || github.event.workflow_run.head_branch || github.ref_name, 'donggeul/') }}
     name: build_and_push (${{ matrix.docker.repo }})
     strategy:
       matrix:
